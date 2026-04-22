@@ -1,0 +1,233 @@
+.quest-log {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  animation: float-in 0.6s ease both;
+}
+
+/* Header */
+.quest-header {
+  padding: var(--space-lg);
+  position: relative;
+}
+
+.quest-header-title {
+  font-size: 1rem;
+  letter-spacing: 0.15em;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  margin-bottom: var(--space-md);
+}
+
+.quest-progress-overview {
+  margin-bottom: var(--space-md);
+}
+
+.quest-count {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+/* Filter Tabs */
+.filter-tabs {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.filter-tab {
+  flex: 1;
+  padding: var(--space-sm) var(--space-xs);
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.05em;
+}
+
+.filter-tab.active {
+  background: var(--neon-glow);
+  border-color: var(--border-bright);
+  color: var(--neon-primary);
+  text-shadow: 0 0 8px var(--neon-primary);
+}
+
+/* Quest List */
+.quest-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* Quest Card */
+.quest-card {
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  animation: float-in 0.4s ease both;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  border-left: 3px solid var(--cat-color, var(--border-panel));
+}
+
+.quest-card:not(.completed):hover {
+  transform: translateX(2px);
+  box-shadow: var(--shadow-deep), 0 0 25px rgba(0, 212, 255, 0.15);
+}
+
+.quest-card.completed {
+  opacity: 0.6;
+  border-left-color: var(--accent-green);
+  background: rgba(0, 255, 136, 0.04);
+}
+
+.quest-card.completing {
+  animation: border-pulse 0.5s ease 3;
+}
+
+/* Category Tag */
+.quest-category {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 1px solid;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  width: fit-content;
+}
+
+/* Quest Content */
+.quest-content {
+  flex: 1;
+}
+
+.quest-title-row {
+  margin-bottom: 4px;
+}
+
+.quest-title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.quest-title.done {
+  color: var(--accent-green);
+  text-decoration: line-through;
+  text-decoration-color: rgba(0, 255, 136, 0.5);
+}
+
+.checkmark {
+  color: var(--accent-green);
+  font-size: 0.9rem;
+  text-shadow: 0 0 8px var(--accent-green);
+}
+
+.quest-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin-bottom: var(--space-sm);
+}
+
+/* Rewards */
+.quest-rewards {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.reward-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+}
+
+.reward-exp {
+  color: var(--neon-primary);
+  text-shadow: 0 0 6px var(--neon-primary);
+}
+
+.reward-stat {
+  color: var(--accent-gold);
+}
+
+/* Complete Button */
+.quest-complete-btn {
+  width: 100%;
+  font-size: 0.9rem;
+  min-height: 48px;
+}
+
+.quest-complete-btn.completing {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+.completing-text {
+  animation: pulse-glow 0.5s ease infinite;
+}
+
+/* Done Badge */
+.quest-done-badge {
+  text-align: center;
+  padding: var(--space-sm);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--accent-green);
+  text-shadow: 0 0 8px var(--accent-green);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+  padding: var(--space-2xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+}
+
+.empty-title {
+  font-size: 1.1rem;
+  color: var(--accent-gold);
+  text-shadow: 0 0 10px var(--accent-gold);
+}
+
+.empty-sub {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* System Notice */
+.system-notice {
+  padding: var(--space-md);
+}
+
+.notice-text {
+  font-size: 0.7rem;
+  color: var(--accent-red);
+  text-align: center;
+  letter-spacing: 0.03em;
+  line-height: 1.5;
+}

@@ -1,0 +1,128 @@
+.settings-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  animation: float-in 0.6s ease both;
+}
+
+.settings-section {
+  padding: var(--space-lg);
+}
+
+.settings-title {
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  margin-bottom: var(--space-sm);
+}
+
+.settings-subtitle {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: var(--space-md);
+}
+
+/* Form */
+.form-group {
+  margin-top: var(--space-md);
+}
+
+.form-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-sm);
+}
+
+.form-row {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.system-input {
+  flex: 1;
+  padding: var(--space-md);
+  background: rgba(0, 20, 50, 0.8);
+  border: 1px solid var(--border-panel);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 52px;
+}
+
+.system-input:focus {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+}
+
+.system-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Data Actions */
+.data-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.data-btn {
+  width: 100%;
+  justify-content: flex-start;
+  gap: var(--space-md);
+  min-height: 64px;
+  text-align: left;
+}
+
+.data-btn > span {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.btn-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Save Info */
+.save-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.save-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-sm);
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+}
+
+.last-login {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Danger Zone */
+.danger-zone {
+  border-color: rgba(255, 45, 85, 0.2) !important;
+}
+
+/* About */
+.about-section {
+  padding: var(--space-lg) 0 var(--space-xl);
+}

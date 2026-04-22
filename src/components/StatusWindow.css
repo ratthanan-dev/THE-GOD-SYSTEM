@@ -1,0 +1,236 @@
+.status-window {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  animation: float-in 0.6s ease both;
+}
+
+/* Header Panel */
+.status-header {
+  padding: var(--space-lg);
+  position: relative;
+  animation: border-pulse 4s ease infinite;
+}
+
+.status-header-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+/* Rank Badge */
+.rank-badge {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(var(--rank-color-rgb), 0.2), transparent 70%);
+  border: 2px solid var(--rank-color, #a0a0b0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px var(--rank-color, #a0a0b0), 0 0 40px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.rank-badge::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 1px solid var(--rank-color, #a0a0b0);
+  opacity: 0.3;
+  animation: spin 8s linear infinite;
+}
+
+.rank-letter {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--rank-color, #a0a0b0);
+  text-shadow: 0 0 15px var(--rank-color, #a0a0b0);
+}
+
+/* Hunter Identity */
+.hunter-identity {
+  flex: 1;
+  min-width: 0;
+}
+
+.hunter-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.job-title {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* Level Display */
+.level-display {
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.level-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+
+.level-number {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  line-height: 1;
+}
+
+/* Bar Sections */
+.bar-section {
+  margin-bottom: var(--space-sm);
+}
+
+.bar-section:last-child {
+  margin-bottom: 0;
+}
+
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+}
+
+.bar-numbers {
+  color: var(--text-secondary);
+}
+
+.exp-percent {
+  text-align: right;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Stats Section */
+.stats-section {
+  padding: var(--space-md) var(--space-lg);
+}
+
+.section-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.section-icon {
+  font-size: 1rem;
+}
+
+.stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.stat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.stat-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.stat-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  width: 40px;
+  flex-shrink: 0;
+}
+
+.stat-fullname {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.stat-bar-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.progress-bar-container.thin {
+  height: 5px;
+}
+
+.stat-value {
+  font-size: 0.75rem;
+  color: var(--neon-primary);
+  width: 24px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Totals Row */
+.totals-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: var(--space-sm);
+}
+
+.total-card {
+  padding: var(--space-md) var(--space-sm);
+  text-align: center;
+}
+
+.total-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+}
+
+.total-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin-top: 2px;
+}
+
+/* HP Restore Button */
+.hp-restore-btn {
+  font-size: 0.9rem;
+}

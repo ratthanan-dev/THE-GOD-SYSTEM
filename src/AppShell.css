@@ -1,0 +1,237 @@
+/* ============================================
+   APP SHELL — Main Layout
+   ============================================ */
+
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  position: relative;
+  /* Glass edge effect on larger screens */
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1), 0 0 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   SYSTEM HEADER
+   ============================================ */
+.system-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(0, 5, 16, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border-panel);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+}
+
+/* Logo */
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.logo-hex {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.logo-icon {
+  font-size: 2.2rem;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  line-height: 1;
+  animation: pulse-glow 3s ease infinite;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+}
+
+.header-main {
+  font-size: 0.8rem;
+  letter-spacing: 0.15em;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  font-weight: 700;
+}
+
+.header-sub {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* Quick Stats */
+.header-quick {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.quick-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.quick-label {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+}
+
+.quick-value {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  line-height: 1;
+}
+
+.quick-rank {
+  font-size: 1.2rem;
+  font-weight: 900;
+  font-family: var(--font-display);
+  letter-spacing: 0.1em;
+}
+
+/* Header Scan Line */
+.header-scan {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--neon-primary), transparent);
+  opacity: 0.4;
+  animation: scan-pulse 4s ease infinite;
+}
+
+@keyframes scan-pulse {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  /* Padding for bottom nav */
+  padding-bottom: 80px;
+}
+
+/* Tab Panels */
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+  animation: float-in 0.3s ease;
+}
+
+/* ============================================
+   BOTTOM NAVIGATION
+   ============================================ */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 200;
+  padding: 0 var(--space-md) env(safe-area-inset-bottom, 0px);
+  background: rgba(0, 5, 16, 0.98);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-top: 1px solid var(--border-panel);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: stretch;
+  height: 64px;
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  min-height: 44px; /* iOS touch target */
+  padding: var(--space-sm) 0;
+}
+
+.nav-icon {
+  font-size: 1.4rem;
+  transition: transform var(--transition-fast);
+}
+
+.nav-tab:active .nav-icon {
+  transform: scale(0.85);
+}
+
+.nav-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.nav-tab.active .nav-label {
+  color: var(--neon-primary);
+  text-shadow: 0 0 8px var(--neon-primary);
+}
+
+.nav-tab.active .nav-icon {
+  filter: drop-shadow(0 0 8px var(--neon-primary));
+  transform: translateY(-2px);
+}
+
+/* Active indicator line */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  background: var(--neon-primary);
+  box-shadow: 0 0 8px var(--neon-primary), 0 0 16px rgba(0, 212, 255, 0.5);
+  border-radius: 100px;
+  animation: fade-in 0.2s ease;
+}
+
+/* Desktop: show side gutter */
+@media (min-width: 520px) {
+  .app-shell {
+    border-left: 1px solid var(--border-dim);
+    border-right: 1px solid var(--border-dim);
+  }
+}
