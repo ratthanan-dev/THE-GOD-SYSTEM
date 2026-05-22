@@ -81,6 +81,7 @@ const QUEST_TEMPLATES = {
     { title: 'นอนหลับ 7-8 ชั่วโมง', desc: 'การพักผ่อนคือการชาร์จพลัง', exp: 70, stat: 'vit', statGain: 2 },
     { title: 'ดื่มน้ำ 8 แก้ว', desc: 'ร่างกายที่ชุ่มชื้นคือร่างกายที่พร้อมรบ', exp: 30, stat: 'vit', statGain: 1 },
     { title: 'ไม่ใช้โทรศัพท์ 1 ชั่วโมง', desc: 'สมาธิของผู้ล่าคือทรัพย์สินที่มีค่า', exp: 60, stat: 'sense', statGain: 2 },
+    { title: 'อาบน้ำให้เสร็จก่อนเที่ยงคืน', desc: 'ชำระล้างร่างกายเพื่อรับพรแห่งการฟื้นฟู', exp: 100, stat: 'vit', statGain: 2 },
   ],
 };
 
@@ -126,12 +127,21 @@ function generateDailyQuests(goals = []) {
   categories.forEach(cat => {
     const catTemplates = QUEST_TEMPLATES[cat];
     const idx = Math.floor(Math.random() * catTemplates.length);
+    const template = catTemplates[idx];
+    
+    let deadline = null;
+    if (template.title === 'อาบน้ำให้เสร็จก่อนเที่ยงคืน') {
+      const today = new Date();
+      deadline = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 0).toISOString();
+    }
+
     selected.push({
-      ...catTemplates[idx],
+      ...template,
       id: `quest_${Date.now()}_${Math.random().toString(36).slice(2)}`,
       category: cat,
       completed: false,
       type: 'daily',
+      deadline,
     });
   });
   return selected;
@@ -143,8 +153,28 @@ function generateDailyQuests(goals = []) {
 
 function gameReducer(state, action) {
   switch (action.type) {
-    case 'LOAD_STATE':
-      return { ...action.payload, notifications: [], showLevelUp: false, showPenalty: false };
+    case 'LOAD_STATE': {
+      const payload = { ...action.payload };
+      const hasShowerQuest = (payload.quests || []).some(q => q.title.includes('อาบน้ำ'));
+      if (!hasShowerQuest) {
+        const today = new Date();
+        const midnight = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 0);
+        const showerQuest = {
+          id: `quest_shower_${Date.now()}`,
+          title: 'อาบน้ำให้เสร็จก่อนเที่ยงคืน',
+          desc: 'ชำระล้างร่างกายเพื่อรับพรแห่งการฟื้นฟู',
+          exp: 100,
+          stat: 'vit',
+          statGain: 2,
+          category: 'daily',
+          completed: false,
+          type: 'daily',
+          deadline: midnight.toISOString()
+        };
+        payload.quests = [showerQuest, ...(payload.quests || [])];
+      }
+      return { ...payload, notifications: [], showLevelUp: false, showPenalty: false };
+    }
 
     case 'SET_HUNTER_NAME':
       return {
@@ -255,6 +285,20 @@ function gameReducer(state, action) {
         ...state,
         hunter: { ...state.hunter, hp: restoredHp },
       };
+    }
+
+    case 'SET_QUEST_DEADLINE': {
+      const newQuests = state.quests.map(q =>
+        q.id === action.questId ? { ...q, deadline: action.deadline } : q
+      );
+      return { ...state, quests: newQuests };
+    }
+
+    case 'REMOVE_QUEST_DEADLINE': {
+      const newQuests = state.quests.map(q =>
+        q.id === action.questId ? { ...q, deadline: null } : q
+      );
+      return { ...state, quests: newQuests };
     }
 
     case 'RESET_DATA':

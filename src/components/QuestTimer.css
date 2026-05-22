@@ -1,0 +1,342 @@
+/* ============================================
+   QUEST TIMER STYLES
+   Solo Leveling — Countdown System
+   ============================================ */
+
+/* ── Base Timer ── */
+.quest-timer {
+  --timer-color: #00d4ff;
+  --timer-glow: rgba(0, 212, 255, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  border-radius: var(--radius-sm);
+  transition: all 0.3s ease;
+}
+
+/* ── Compact (inline on card) ── */
+.quest-timer.compact {
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--timer-color) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--timer-color) 30%, transparent);
+  border-radius: 100px;
+  font-size: 0.72rem;
+  width: fit-content;
+}
+
+.timer-digits {
+  color: var(--timer-color);
+  text-shadow: 0 0 8px var(--timer-glow);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.timer-icon {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.timer-urgency-label {
+  font-size: 0.65rem;
+  color: var(--timer-color);
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 6px var(--timer-glow);
+}
+
+/* ── Full (expanded on card) ── */
+.quest-timer.full {
+  flex-direction: column;
+  align-items: stretch;
+  padding: var(--space-md);
+  background: color-mix(in srgb, var(--timer-color) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--timer-color) 25%, transparent);
+  border-radius: var(--radius-md);
+  gap: var(--space-sm);
+}
+
+.timer-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-header-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  flex: 1;
+}
+
+.timer-urgency-badge {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: color-mix(in srgb, var(--timer-color) 20%, transparent);
+  color: var(--timer-color);
+  border: 1px solid color-mix(in srgb, var(--timer-color) 40%, transparent);
+  text-shadow: 0 0 6px var(--timer-glow);
+  letter-spacing: 0.05em;
+}
+
+.timer-blocks {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 48px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid color-mix(in srgb, var(--timer-color) 20%, transparent);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+}
+
+.timer-num {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--timer-color);
+  text-shadow: 0 0 12px var(--timer-glow), 0 0 25px color-mix(in srgb, var(--timer-color) 30%, transparent);
+  letter-spacing: 0.05em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.timer-unit {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  margin-top: 3px;
+}
+
+.timer-sep {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  color: color-mix(in srgb, var(--timer-color) 50%, transparent);
+  line-height: 1;
+  margin-bottom: 12px;
+  text-shadow: 0 0 8px var(--timer-glow);
+}
+
+/* ── Progress Bar ── */
+.timer-progress-bar {
+  margin-top: 2px;
+}
+
+.timer-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.timer-bar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 1s linear, background 1s ease;
+}
+
+/* ── Urgency States ── */
+.quest-timer.critical .timer-num,
+.quest-timer.expired .timer-text {
+  animation: timer-flash 0.6s ease infinite;
+}
+
+.quest-timer.expired {
+  padding: 6px 12px;
+  background: rgba(255, 45, 85, 0.1);
+  border: 1px solid rgba(255, 45, 85, 0.3);
+  border-radius: 100px;
+  font-size: 0.75rem;
+  color: #ff2d55;
+  text-shadow: 0 0 8px rgba(255, 45, 85, 0.5);
+  width: fit-content;
+}
+
+/* ── Pulse animation for urgency ── */
+.timer-pulse {
+  animation: timer-container-pulse 1.5s ease infinite;
+}
+
+@keyframes timer-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes timer-container-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--timer-glow); }
+  50% { box-shadow: 0 0 0 4px var(--timer-glow); }
+}
+
+/* ============================================
+   TIMER BUTTON ON QUEST CARD
+   ============================================ */
+.quest-timer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px dashed rgba(0, 212, 255, 0.3);
+  border-radius: 100px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.05em;
+}
+
+.quest-timer-btn:hover {
+  background: rgba(0, 212, 255, 0.15);
+  border-color: rgba(0, 212, 255, 0.5);
+  color: var(--neon-primary);
+}
+
+/* ============================================
+   DEADLINE MODAL
+   ============================================ */
+.deadline-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: var(--space-md);
+  animation: fade-in 0.2s ease;
+}
+
+.deadline-modal {
+  width: 100%;
+  max-width: 480px;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: slide-up 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  max-height: 90dvh;
+  overflow-y: auto;
+}
+
+.deadline-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.deadline-close-btn {
+  background: transparent;
+  border: 1px solid var(--border-dim);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.15s;
+}
+
+.deadline-close-btn:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.deadline-quest-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 2px solid var(--neon-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Quick Presets */
+.deadline-presets {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  padding: 6px 14px;
+  background: rgba(0, 212, 255, 0.08);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 100px;
+  color: var(--neon-dim);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.05em;
+}
+
+.preset-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: var(--border-bright);
+  color: var(--neon-primary);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Input */
+.deadline-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.deadline-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(0, 20, 50, 0.8);
+  border: 1px solid var(--border-panel);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+  min-height: 48px;
+  color-scheme: dark;
+}
+
+.deadline-input:focus {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.15);
+}
+
+.deadline-error {
+  font-size: 0.72rem;
+  color: var(--accent-red);
+  text-shadow: 0 0 6px var(--accent-red);
+  letter-spacing: 0.05em;
+}
+
+.deadline-preview {
+  padding: var(--space-sm);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-md);
+  display: flex;
+  justify-content: center;
+}
+
+.deadline-actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* ── Small screen adjustments ── */
+@media (max-width: 400px) {
+  .timer-num { font-size: 1.2rem; }
+  .timer-block { min-width: 40px; }
+  .deadline-presets { gap: 6px; }
+}

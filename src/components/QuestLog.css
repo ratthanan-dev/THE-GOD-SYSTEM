@@ -90,6 +90,23 @@
 }
 
 /* Category Tag */
+.quest-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.quest-timer-click {
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.quest-timer-click:hover {
+  opacity: 0.8;
+}
+
 .quest-category {
   display: inline-flex;
   align-items: center;

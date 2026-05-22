@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useGame } from '../context/GameContext';
+import QuestTimer, { DeadlineModal } from './QuestTimer';
 import './QuestLog.css';
+import './QuestTimer.css';
 
 const CATEGORY_CONFIG = {
   fitness: { label: 'FITNESS', icon: '💪', color: '#ff6b35' },
@@ -22,6 +24,7 @@ export default function QuestLog() {
   const { quests } = state;
   const [filter, setFilter] = useState('all');
   const [completing, setCompleting] = useState(null);
+  const [deadlineModal, setDeadlineModal] = useState(null); // quest object
 
   const completedCount = quests.filter(q => q.completed).length;
   const totalCount = quests.length;
@@ -35,14 +38,21 @@ export default function QuestLog() {
   const handleComplete = (questId) => {
     if (completing) return;
     setCompleting(questId);
-
-    // Haptic feedback
     if (navigator.vibrate) navigator.vibrate([50, 30, 100]);
-
     setTimeout(() => {
       dispatch({ type: 'COMPLETE_QUEST', questId });
       setCompleting(null);
     }, 600);
+  };
+
+  const handleSaveDeadline = (questId, deadline) => {
+    dispatch({ type: 'SET_QUEST_DEADLINE', questId, deadline });
+    setDeadlineModal(null);
+  };
+
+  const handleRemoveDeadline = (questId) => {
+    dispatch({ type: 'REMOVE_QUEST_DEADLINE', questId });
+    setDeadlineModal(null);
   };
 
   return (
@@ -91,6 +101,7 @@ export default function QuestLog() {
         {filteredQuests.map((quest, idx) => {
           const catCfg = CATEGORY_CONFIG[quest.category] || CATEGORY_CONFIG.daily;
           const isCompleting = completing === quest.id;
+          const hasDeadline = !!quest.deadline;
 
           return (
             <div
@@ -98,10 +109,35 @@ export default function QuestLog() {
               className={`quest-card glass-panel ${quest.completed ? 'completed' : ''} ${isCompleting ? 'completing' : ''}`}
               style={{ animationDelay: `${idx * 0.08}s`, '--cat-color': catCfg.color }}
             >
-              {/* Category Tag */}
-              <div className="quest-category" style={{ background: `${catCfg.color}22`, borderColor: `${catCfg.color}55` }}>
-                <span>{catCfg.icon}</span>
-                <span className="text-mono" style={{ color: catCfg.color }}>{catCfg.label}</span>
+              {/* Category Tag + Timer Row */}
+              <div className="quest-card-top">
+                <div className="quest-category" style={{ background: `${catCfg.color}22`, borderColor: `${catCfg.color}55` }}>
+                  <span>{catCfg.icon}</span>
+                  <span className="text-mono" style={{ color: catCfg.color }}>{catCfg.label}</span>
+                </div>
+
+                {/* Compact timer or set-timer button */}
+                {!quest.completed && (
+                  hasDeadline
+                    ? (
+                      <div
+                        className="quest-timer-click"
+                        onClick={() => setDeadlineModal(quest)}
+                        title="แตะเพื่อแก้ไขเวลา"
+                      >
+                        <QuestTimer deadline={quest.deadline} compact />
+                      </div>
+                    )
+                    : (
+                      <button
+                        className="quest-timer-btn"
+                        onClick={() => setDeadlineModal(quest)}
+                        id={`timer-btn-${quest.id}`}
+                      >
+                        ⏰ ตั้งเวลา
+                      </button>
+                    )
+                )}
               </div>
 
               {/* Quest Content */}
@@ -161,6 +197,16 @@ export default function QuestLog() {
           ⚠️ เควสต์จะรีเซ็ตเวลาเปิดแอปวันใหม่ — ทำไม่ครบจะถูกหักค่าสถิติ
         </div>
       </div>
+
+      {/* Deadline Modal */}
+      {deadlineModal && (
+        <DeadlineModal
+          quest={deadlineModal}
+          onSave={(deadline) => handleSaveDeadline(deadlineModal.id, deadline)}
+          onRemove={() => handleRemoveDeadline(deadlineModal.id)}
+          onClose={() => setDeadlineModal(null)}
+        />
+      )}
     </div>
   );
 }
