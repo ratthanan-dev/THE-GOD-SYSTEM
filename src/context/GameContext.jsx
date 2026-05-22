@@ -1,4 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useRef, useState } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { signOut } from 'firebase/auth';
+import { db, auth } from '../firebase';
 
 // ============================================
 // DATA MODELS
@@ -18,7 +21,6 @@ const JOB_TITLES = {
 };
 
 function getLevelFromExp(exp) {
-  // Each level requires: (level * 100) exp
   let level = 1;
   let totalRequired = 0;
   while (true) {
@@ -32,7 +34,6 @@ function getLevelFromExp(exp) {
 }
 
 function getExpForLevel(level) {
-  // Total exp needed to reach this level
   let total = 0;
   for (let i = 1; i < level; i++) {
     total += i * 100;
@@ -120,11 +121,7 @@ function createInitialState() {
 // ============================================
 
 function generateDailyQuests(goals = []) {
-  const allTemplates = Object.values(QUEST_TEMPLATES).flat();
   const selected = [];
-  const usedIndices = new Set();
-
-  // Always include one from each category
   const categories = Object.keys(QUEST_TEMPLATES);
   categories.forEach(cat => {
     const catTemplates = QUEST_TEMPLATES[cat];
@@ -137,7 +134,6 @@ function generateDailyQuests(goals = []) {
       type: 'daily',
     });
   });
-
   return selected;
 }
 
@@ -173,7 +169,6 @@ function gameReducer(state, action) {
       const newRank = getRankForLevel(newLevel);
       const leveledUp = newLevel > oldLevel;
 
-      // Stat gain
       const newStats = { ...state.hunter.stats };
       if (quest.stat && quest.statGain) {
         newStats[quest.stat] = (newStats[quest.stat] || 0) + quest.statGain;
@@ -280,49 +275,68 @@ function gameReducer(state, action) {
 const GameContext = createContext(null);
 const STORAGE_KEY = 'real_life_system_v1';
 
-export function GameProvider({ children }) {
+export function GameProvider({ children, userId }) {
   const [state, dispatch] = useReducer(gameReducer, createInitialState());
+  const [cloudLoaded, setCloudLoaded] = useState(false);
+  const saveTimeoutRef = useRef(null);
 
-  // Load from localStorage on mount
+  // ── Load from Firestore (Cloud) on mount ──
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        dispatch({ type: 'LOAD_STATE', payload: parsed });
+    if (!userId) return;
 
-        // Check for daily reset
-        const today = new Date().toDateString();
-        if (parsed.lastLoginDate !== today) {
-          // Check for incomplete quests penalty
-          const yesterday = parsed.quests || [];
-          const incompleteCount = yesterday.filter(q => !q.completed).length;
-          if (incompleteCount > 0 && parsed.lastLoginDate) {
+    const loadFromCloud = async () => {
+      try {
+        const docRef = doc(db, 'users', userId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          dispatch({ type: 'LOAD_STATE', payload: data });
+
+          // Check for daily reset
+          const today = new Date().toDateString();
+          if (data.lastLoginDate !== today) {
+            const incompleteCount = (data.quests || []).filter(q => !q.completed).length;
+            if (incompleteCount > 0 && data.lastLoginDate) {
+              setTimeout(() => {
+                dispatch({
+                  type: 'APPLY_PENALTY',
+                  expPenalty: incompleteCount * 30,
+                  hpPenalty: incompleteCount * 5,
+                  reason: `ไม่ทำเควสต์ครบ ${incompleteCount} ข้อเมื่อวาน`,
+                });
+              }, 1500);
+            }
             setTimeout(() => {
-              dispatch({
-                type: 'APPLY_PENALTY',
-                expPenalty: incompleteCount * 30,
-                hpPenalty: incompleteCount * 5,
-                reason: `ไม่ทำเควสต์ครบ ${incompleteCount} ข้อเมื่อวาน`,
-              });
-            }, 1500);
+              dispatch({ type: 'DAILY_RESET' });
+            }, incompleteCount > 0 ? 4000 : 500);
           }
-          setTimeout(() => {
-            dispatch({ type: 'DAILY_RESET' });
-          }, incompleteCount > 0 ? 4000 : 500);
+        } else {
+          // New user — no cloud data yet
+          dispatch({ type: 'DAILY_RESET' });
         }
-      } else {
-        // New user
-        dispatch({ type: 'DAILY_RESET' });
+      } catch (err) {
+        console.error('Cloud load failed, falling back to localStorage:', err);
+        // Fallback to localStorage
+        try {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          if (saved) dispatch({ type: 'LOAD_STATE', payload: JSON.parse(saved) });
+          else dispatch({ type: 'DAILY_RESET' });
+        } catch {
+          dispatch({ type: 'DAILY_RESET' });
+        }
+      } finally {
+        setCloudLoaded(true);
       }
-    } catch (e) {
-      console.error('Failed to load state:', e);
-      dispatch({ type: 'DAILY_RESET' });
-    }
-  }, []);
+    };
 
-  // Save to localStorage on state changes
+    loadFromCloud();
+  }, [userId]);
+
+  // ── Auto-save to Firestore + localStorage (debounced 1.5s) ──
   useEffect(() => {
+    if (!cloudLoaded || !userId) return;
+
     const toSave = {
       hunter: state.hunter,
       quests: state.quests,
@@ -330,14 +344,28 @@ export function GameProvider({ children }) {
       settings: state.settings,
       initialized: state.initialized,
     };
+
+    // Save to localStorage immediately (offline backup)
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
-    } catch (e) {
-      console.error('Failed to save state:', e);
-    }
-  }, [state.hunter, state.quests, state.lastLoginDate, state.settings, state.initialized]);
+    } catch {}
 
-  // Export save data
+    // Debounce cloud saves to avoid excessive writes
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'users', userId), toSave);
+      } catch (err) {
+        console.error('Cloud save failed:', err);
+      }
+    }, 1500);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [state.hunter, state.quests, state.lastLoginDate, state.settings, state.initialized, cloudLoaded, userId]);
+
+  // ── Export save data ──
   const exportData = useCallback(() => {
     const data = {
       hunter: state.hunter,
@@ -357,7 +385,7 @@ export function GameProvider({ children }) {
     URL.revokeObjectURL(url);
   }, [state]);
 
-  // Import save data
+  // ── Import save data ──
   const importData = useCallback((file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -375,6 +403,15 @@ export function GameProvider({ children }) {
     });
   }, []);
 
+  // ── Sign out ──
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.error('Sign out failed:', err);
+    }
+  }, []);
+
   // Computed values
   const level = state.hunter.level;
   const expInCurrentLevel = state.hunter.totalExp - getExpForLevel(level);
@@ -386,6 +423,8 @@ export function GameProvider({ children }) {
     dispatch,
     exportData,
     importData,
+    signOut: handleSignOut,
+    cloudLoaded,
     computed: {
       expInCurrentLevel,
       expToNext,
@@ -393,6 +432,34 @@ export function GameProvider({ children }) {
       level,
     },
   };
+
+  // Show loading spinner while fetching cloud data
+  if (!cloudLoaded) {
+    return (
+      <div style={{
+        position: 'fixed', inset: 0,
+        background: '#0a0a0f',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: '1rem',
+      }}>
+        <div style={{
+          width: 48, height: 48,
+          border: '3px solid rgba(0,255,136,0.2)',
+          borderTopColor: '#00ff88',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
+        <p style={{
+          color: 'rgba(0,255,136,0.6)',
+          fontFamily: 'monospace',
+          fontSize: '0.75rem',
+          letterSpacing: '0.15em',
+        }}>LOADING HUNTER DATA...</p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>;
 }

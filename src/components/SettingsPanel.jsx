@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 import './SettingsPanel.css';
 
 export default function SettingsPanel() {
-  const { state, dispatch, exportData, importData } = useGame();
+  const { state, dispatch, exportData, importData, signOut, cloudLoaded } = useGame();
   const importRef = useRef(null);
   const nameRef = useRef(null);
 
@@ -61,11 +61,37 @@ export default function SettingsPanel() {
         </div>
       </div>
 
+      {/* Cloud Sync Status */}
+      <div className="settings-section glass-panel-light">
+        <div className="settings-title text-display">☁️ Cloud Sync</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: '50%',
+            background: cloudLoaded ? '#00ff88' : '#ffd700',
+            boxShadow: cloudLoaded ? '0 0 8px #00ff88' : '0 0 8px #ffd700',
+            display: 'inline-block',
+            animation: cloudLoaded ? 'none' : 'pulse 1s ease-in-out infinite',
+          }} />
+          <span className="text-mono" style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+            {cloudLoaded ? 'ซิงค์กับ Firebase เรียบร้อย — ข้อมูลปลอดภัย 100%' : 'กำลังซิงค์...'}
+          </span>
+        </div>
+
+        <button
+          className="btn btn-ghost w-full"
+          onClick={signOut}
+          id="signout-btn"
+          style={{ marginTop: '0.75rem', borderColor: 'rgba(255,255,255,0.1)' }}
+        >
+          🚪 ออกจากระบบ
+        </button>
+      </div>
+
       {/* Data Management */}
       <div className="settings-section glass-panel">
         <div className="settings-title text-display">💾 จัดการข้อมูล</div>
         <div className="settings-subtitle text-secondary">
-          ป้องกันข้อมูลหายเมื่อล้างประวัติเบราว์เซอร์ — ส่งออกข้อมูลสำรองไว้เสมอ
+          ข้อมูลถูก Auto-save ขึ้น Cloud อัตโนมัติ — Export ไว้เป็นสำรองเพิ่มเติม
         </div>
 
         <div className="data-actions">
@@ -149,10 +175,10 @@ export default function SettingsPanel() {
       {/* About */}
       <div className="about-section text-center">
         <div className="text-mono" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-          REAL-LIFE SYSTEM v1.0 MVP
+          REAL-LIFE SYSTEM v1.0 — Firebase Cloud Edition
         </div>
         <div className="text-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-          Powered by THE-GOD-SYSTEM
+          Powered by THE-GOD-SYSTEM ✦ Auto-save enabled
         </div>
       </div>
     </div>
