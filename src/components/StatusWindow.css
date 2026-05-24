@@ -158,31 +158,51 @@
 .stat-meta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  width: 140px;
+  gap: 10px;
+  width: 220px;
   flex-shrink: 0;
 }
 
 .stat-icon {
-  font-size: 1rem;
+  font-size: 1.2rem;
   flex-shrink: 0;
+}
+
+.stat-names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.stat-names-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stat-label {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: var(--text-primary);
-  width: 40px;
-  flex-shrink: 0;
+  text-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
 }
 
 .stat-fullname {
-  font-size: 0.65rem;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+}
+
+.stat-realworld {
+  font-size: 0.62rem;
   color: var(--text-muted);
   font-family: var(--font-body);
-  text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+  opacity: 0.75;
 }
 
 .stat-bar-area {

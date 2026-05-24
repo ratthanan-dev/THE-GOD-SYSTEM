@@ -3,11 +3,11 @@ import { useGame } from '../context/GameContext';
 import './StatusWindow.css';
 
 const STAT_CONFIG = {
-  str: { label: 'STR', fullName: 'ความแข็งแกร่ง', barClass: 'str-bar', icon: '⚔️', max: 200 },
-  agi: { label: 'AGI', fullName: 'ความคล่องแคล่ว', barClass: 'agi-bar', icon: '⚡', max: 200 },
-  int: { label: 'INT', fullName: 'สติปัญญา', barClass: 'int-bar', icon: '📖', max: 200 },
-  vit: { label: 'VIT', fullName: 'ชีวิต', barClass: 'vit-bar', icon: '🛡️', max: 200 },
-  sense: { label: 'SENSE', fullName: 'การรับรู้', barClass: 'sense-bar', icon: '👁️', max: 200 },
+  str: { label: 'STR', fullName: 'ความแข็งแกร่ง', realWorldDesc: 'การออกกำลังกาย, เวทเทรนนิ่ง, คาร์ดิโอ', barClass: 'str-bar', icon: '⚔️', max: 200 },
+  agi: { label: 'AGI', fullName: 'ความคล่องแคล่ว', realWorldDesc: 'การตรงต่อเวลา, การตื่นเช้า, บริหารเวลา', barClass: 'agi-bar', icon: '⚡', max: 200 },
+  int: { label: 'INT', fullName: 'สติปัญญา', realWorldDesc: 'การเรียนรู้, อ่านหนังสือ, ฝึกทักษะใหม่', barClass: 'int-bar', icon: '📖', max: 200 },
+  vit: { label: 'VIT', fullName: 'ชีวิต', realWorldDesc: 'การพักผ่อน, นอนตรงเวลา, ดื่มน้ำ, โภชนาการ', barClass: 'vit-bar', icon: '🛡️', max: 200 },
+  sense: { label: 'SENSE', fullName: 'การรับรู้', realWorldDesc: 'การทำสมาธิ, การจดบันทึก, การฝึกสติ', barClass: 'sense-bar', icon: '👁️', max: 200 },
 };
 
 const RANK_COLORS = {
@@ -85,8 +85,13 @@ export default function StatusWindow() {
               <div className="stat-row" key={key}>
                 <div className="stat-meta">
                   <span className="stat-icon">{cfg.icon}</span>
-                  <span className="stat-label text-display">{cfg.label}</span>
-                  <span className="stat-fullname text-secondary">{cfg.fullName}</span>
+                  <div className="stat-names">
+                    <div className="stat-names-top">
+                      <span className="stat-label text-display">{cfg.label}</span>
+                      <span className="stat-fullname text-secondary">{cfg.fullName}</span>
+                    </div>
+                    <span className="stat-realworld text-muted">{cfg.realWorldDesc}</span>
+                  </div>
                 </div>
                 <div className="stat-bar-area">
                   <div className="progress-bar-container thin">
