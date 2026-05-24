@@ -148,6 +148,15 @@
   animation: float-in 0.3s ease;
 }
 
+/* AI panel — flex column, no extra scroll */
+.ai-tab-panel.active {
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 56px - 64px - 16px);
+  overflow: hidden;
+  padding: 0;
+}
+
 /* ============================================
    BOTTOM NAVIGATION
    ============================================ */
@@ -190,7 +199,7 @@
 }
 
 .nav-icon {
-  font-size: 1.4rem;
+  font-size: 1.25rem;
   transition: transform var(--transition-fast);
 }
 

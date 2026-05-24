@@ -3,12 +3,14 @@ import { useGame } from './context/GameContext';
 import StatusWindow from './components/StatusWindow';
 import QuestLog from './components/QuestLog';
 import SettingsPanel from './components/SettingsPanel';
+import AIChat from './components/AIChat';
 import { LevelUpOverlay, PenaltyOverlay, NotificationToast } from './components/SystemAlerts';
 import './AppShell.css';
 
 const TABS = [
   { id: 'status', label: 'สถานะ', icon: '👤', shortLabel: 'STATUS' },
   { id: 'quests', label: 'เควสต์', icon: '📋', shortLabel: 'QUEST' },
+  { id: 'ai', label: 'The System', icon: '🧠', shortLabel: 'A.I.' },
   { id: 'settings', label: 'ตั้งค่า', icon: '⚙️', shortLabel: 'CONFIG' },
 ];
 
@@ -71,6 +73,9 @@ export default function AppShell() {
         </div>
         <div className={`tab-panel ${activeTab === 'quests' ? 'active' : ''}`}>
           <QuestLog />
+        </div>
+        <div className={`tab-panel ai-tab-panel ${activeTab === 'ai' ? 'active' : ''}`}>
+          <AIChat />
         </div>
         <div className={`tab-panel ${activeTab === 'settings' ? 'active' : ''}`}>
           <SettingsPanel />

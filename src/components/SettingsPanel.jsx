@@ -1,11 +1,103 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useGame } from '../context/GameContext';
 import './SettingsPanel.css';
 
+// ─────────────────────────────────────────────
+// Key List Sub-component
+// ─────────────────────────────────────────────
+function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) {
+  const [input, setInput] = useState('');
+  const [showInputs, setShowInputs] = useState({});
+
+  const toggleShow = (i) => setShowInputs(p => ({ ...p, [i]: !p[i] }));
+
+  const maskKey = (k) => {
+    if (!k) return '';
+    if (k.length <= 8) return '•'.repeat(k.length);
+    return k.slice(0, 6) + '••••••••' + k.slice(-4);
+  };
+
+  const handleAdd = () => {
+    const trimmed = input.trim();
+    if (!trimmed || keys.includes(trimmed)) return;
+    onAdd(trimmed);
+    setInput('');
+  };
+
+  return (
+    <div className="key-list-section">
+      {/* Existing keys */}
+      {keys.length > 0 && (
+        <div className="key-entries">
+          {keys.map((k, i) => (
+            <div key={i} className="key-entry">
+              <span className="key-index text-mono" style={{ color: accentColor }}>#{i + 1}</span>
+              <span className="key-value text-mono">
+                {showInputs[i] ? k : maskKey(k)}
+              </span>
+              <button className="key-toggle-btn" onClick={() => toggleShow(i)} title="แสดง/ซ่อน">
+                {showInputs[i] ? '🙈' : '👁️'}
+              </button>
+              <button className="key-remove-btn" onClick={() => onRemove(i)} title="ลบ">
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new key */}
+      <div className="key-add-row">
+        <input
+          type="password"
+          className="system-input key-add-input"
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          placeholder={placeholder}
+          onKeyDown={e => e.key === 'Enter' && handleAdd()}
+          style={{ fontFamily: 'monospace', fontSize: '0.78rem' }}
+        />
+        <button
+          className="btn btn-primary key-add-btn"
+          onClick={handleAdd}
+          disabled={!input.trim()}
+          style={{ background: `${accentColor}22`, borderColor: `${accentColor}55`, color: accentColor }}
+        >
+          + เพิ่ม
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Main SettingsPanel
+// ─────────────────────────────────────────────
 export default function SettingsPanel() {
   const { state, dispatch, exportData, importData, signOut, cloudLoaded } = useGame();
   const importRef = useRef(null);
   const nameRef = useRef(null);
+
+  const config = state.aiConfig || { geminiKeys: [], groqKeys: [], preferredProvider: 'auto' };
+  const geminiKeys = config.geminiKeys || [];
+  const groqKeys = config.groqKeys || [];
+  const totalKeys = geminiKeys.filter(k => k?.trim()).length + groqKeys.filter(k => k?.trim()).length;
+
+  const updateConfig = (patch) => {
+    dispatch({ type: 'SET_AI_CONFIG', config: { ...config, ...patch } });
+  };
+
+  const addKey = (provider, key) => {
+    const arr = provider === 'gemini' ? [...geminiKeys, key] : [...groqKeys, key];
+    updateConfig(provider === 'gemini' ? { geminiKeys: arr } : { groqKeys: arr });
+  };
+
+  const removeKey = (provider, index) => {
+    const arr = provider === 'gemini'
+      ? geminiKeys.filter((_, i) => i !== index)
+      : groqKeys.filter((_, i) => i !== index);
+    updateConfig(provider === 'gemini' ? { geminiKeys: arr } : { groqKeys: arr });
+  };
 
   const handleSaveName = () => {
     const name = nameRef.current?.value?.trim();
@@ -18,11 +110,7 @@ export default function SettingsPanel() {
   const handleImport = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try {
-      await importData(file);
-    } catch (err) {
-      alert('❌ ไม่สามารถอ่านไฟล์ได้ — ตรวจสอบรูปแบบไฟล์อีกครั้ง');
-    }
+    try { await importData(file); } catch { alert('❌ ไม่สามารถอ่านไฟล์ได้ — ตรวจสอบรูปแบบไฟล์อีกครั้ง'); }
     e.target.value = '';
   };
 
@@ -38,26 +126,106 @@ export default function SettingsPanel() {
 
   return (
     <div className="settings-panel">
+
       {/* Hunter Profile */}
       <div className="settings-section glass-panel corner-tl corner-tr">
         <div className="settings-title text-display">⚙️ โปรไฟล์ฮันเตอร์</div>
-
         <div className="form-group">
           <label className="form-label text-mono">ชื่อฮันเตอร์</label>
           <div className="form-row">
-            <input
-              ref={nameRef}
-              type="text"
-              className="system-input"
-              defaultValue={hunter.name}
-              placeholder="ใส่ชื่อฮันเตอร์..."
-              maxLength={20}
-              id="hunter-name-input"
-            />
-            <button className="btn btn-primary" onClick={handleSaveName} id="save-name-btn">
-              บันทึก
-            </button>
+            <input ref={nameRef} type="text" className="system-input" defaultValue={hunter.name} placeholder="ใส่ชื่อฮันเตอร์..." maxLength={20} id="hunter-name-input" />
+            <button className="btn btn-primary" onClick={handleSaveName} id="save-name-btn">บันทึก</button>
           </div>
+        </div>
+      </div>
+
+      {/* AI Configuration */}
+      <div className="settings-section glass-panel" style={{ borderColor: totalKeys > 0 ? 'rgba(0,255,136,0.3)' : undefined }}>
+        <div className="settings-title text-display" style={{ color: '#00ff88', textShadow: '0 0 10px #00ff88' }}>
+          🧠 AI Configuration
+        </div>
+        <div className="settings-subtitle text-secondary">
+          รองรับ Gemini + Groq — ใส่ได้หลาย keys ต่อ provider — auto-rotate เมื่อ rate limit
+        </div>
+
+        {/* Status Summary */}
+        <div className="ai-status-row">
+          <div className="ai-status-item">
+            <span className="ai-status-dot-sm" style={{ background: geminiKeys.filter(k=>k?.trim()).length > 0 ? '#4285f4' : '#444' }} />
+            <span className="text-mono ai-status-label">Gemini</span>
+            <span className="text-mono ai-key-count" style={{ color: '#4285f4' }}>
+              {geminiKeys.filter(k=>k?.trim()).length} key{geminiKeys.filter(k=>k?.trim()).length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="ai-status-item">
+            <span className="ai-status-dot-sm" style={{ background: groqKeys.filter(k=>k?.trim()).length > 0 ? '#f55036' : '#444' }} />
+            <span className="text-mono ai-status-label">Groq</span>
+            <span className="text-mono ai-key-count" style={{ color: '#f55036' }}>
+              {groqKeys.filter(k=>k?.trim()).length} key{groqKeys.filter(k=>k?.trim()).length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="ai-status-item" style={{ marginLeft: 'auto' }}>
+            <span className="text-mono" style={{ fontSize: '0.6rem', color: totalKeys > 0 ? '#00ff88' : 'var(--text-muted)' }}>
+              {totalKeys > 0 ? `✓ ${totalKeys} keys พร้อมใช้` : '⚠ ยังไม่มี key'}
+            </span>
+          </div>
+        </div>
+
+        {/* Provider Preference */}
+        <div className="form-group" style={{ marginTop: '0.75rem' }}>
+          <label className="form-label text-mono">โหมดการใช้งาน</label>
+          <div className="provider-selector">
+            {[
+              { value: 'auto',   label: '⚡ AUTO',   desc: 'สลับอัตโนมัติ' },
+              { value: 'gemini', label: '✦ Gemini', desc: 'ใช้ Gemini หลัก' },
+              { value: 'groq',   label: '🔥 Groq',   desc: 'ใช้ Groq หลัก' },
+            ].map(opt => (
+              <button
+                key={opt.value}
+                className={`provider-opt-btn text-mono ${config.preferredProvider === opt.value ? 'active' : ''}`}
+                onClick={() => updateConfig({ preferredProvider: opt.value })}
+              >
+                <div>{opt.label}</div>
+                <div className="provider-opt-desc">{opt.desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Gemini Keys */}
+        <div className="form-group" style={{ marginTop: '1rem' }}>
+          <label className="form-label text-mono" style={{ color: '#4285f4' }}>
+            ✦ Gemini API Keys
+            <span className="form-label-hint"> · aistudio.google.com/apikey</span>
+          </label>
+          <KeyList
+            provider="gemini"
+            keys={geminiKeys}
+            onAdd={(k) => addKey('gemini', k)}
+            onRemove={(i) => removeKey('gemini', i)}
+            placeholder="AIzaSy..."
+            accentColor="#4285f4"
+          />
+        </div>
+
+        {/* Groq Keys */}
+        <div className="form-group" style={{ marginTop: '1rem' }}>
+          <label className="form-label text-mono" style={{ color: '#f55036' }}>
+            ⚡ Groq API Keys
+            <span className="form-label-hint"> · console.groq.com/keys</span>
+          </label>
+          <KeyList
+            provider="groq"
+            keys={groqKeys}
+            onAdd={(k) => addKey('groq', k)}
+            onRemove={(i) => removeKey('groq', i)}
+            placeholder="gsk_..."
+            accentColor="#f55036"
+          />
+        </div>
+
+        <div className="text-mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '0.75rem' }}>
+          🔒 Keys เก็บใน localStorage เท่านั้น — ไม่ถูก sync ขึ้น Cloud
         </div>
       </div>
 
@@ -65,24 +233,12 @@ export default function SettingsPanel() {
       <div className="settings-section glass-panel-light">
         <div className="settings-title text-display">☁️ Cloud Sync</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: '50%',
-            background: cloudLoaded ? '#00ff88' : '#ffd700',
-            boxShadow: cloudLoaded ? '0 0 8px #00ff88' : '0 0 8px #ffd700',
-            display: 'inline-block',
-            animation: cloudLoaded ? 'none' : 'pulse 1s ease-in-out infinite',
-          }} />
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: cloudLoaded ? '#00ff88' : '#ffd700', boxShadow: cloudLoaded ? '0 0 8px #00ff88' : '0 0 8px #ffd700', display: 'inline-block' }} />
           <span className="text-mono" style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
             {cloudLoaded ? 'ซิงค์กับ Firebase เรียบร้อย — ข้อมูลปลอดภัย 100%' : 'กำลังซิงค์...'}
           </span>
         </div>
-
-        <button
-          className="btn btn-ghost w-full"
-          onClick={signOut}
-          id="signout-btn"
-          style={{ marginTop: '0.75rem', borderColor: 'rgba(255,255,255,0.1)' }}
-        >
+        <button className="btn btn-ghost w-full" onClick={signOut} id="signout-btn" style={{ marginTop: '0.75rem', borderColor: 'rgba(255,255,255,0.1)' }}>
           🚪 ออกจากระบบ
         </button>
       </div>
@@ -90,41 +246,17 @@ export default function SettingsPanel() {
       {/* Data Management */}
       <div className="settings-section glass-panel">
         <div className="settings-title text-display">💾 จัดการข้อมูล</div>
-        <div className="settings-subtitle text-secondary">
-          ข้อมูลถูก Auto-save ขึ้น Cloud อัตโนมัติ — Export ไว้เป็นสำรองเพิ่มเติม
-        </div>
-
+        <div className="settings-subtitle text-secondary">ข้อมูลถูก Auto-save ขึ้น Cloud อัตโนมัติ — Export ไว้เป็นสำรองเพิ่มเติม</div>
         <div className="data-actions">
-          <button
-            className="btn btn-primary data-btn"
-            onClick={exportData}
-            id="export-btn"
-          >
+          <button className="btn btn-primary data-btn" onClick={exportData} id="export-btn">
             <span>📤</span>
-            <div>
-              <div>Export ข้อมูล</div>
-              <div className="btn-sub text-mono">บันทึกเป็นไฟล์ .json</div>
-            </div>
+            <div><div>Export ข้อมูล</div><div className="btn-sub text-mono">บันทึกเป็นไฟล์ .json</div></div>
           </button>
-
-          <button
-            className="btn btn-ghost data-btn"
-            onClick={() => importRef.current?.click()}
-            id="import-btn"
-          >
+          <button className="btn btn-ghost data-btn" onClick={() => importRef.current?.click()} id="import-btn">
             <span>📥</span>
-            <div>
-              <div>Import ข้อมูล</div>
-              <div className="btn-sub text-mono">โหลดไฟล์ .json</div>
-            </div>
+            <div><div>Import ข้อมูล</div><div className="btn-sub text-mono">โหลดไฟล์ .json</div></div>
           </button>
-          <input
-            ref={importRef}
-            type="file"
-            accept=".json"
-            style={{ display: 'none' }}
-            onChange={handleImport}
-          />
+          <input ref={importRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImport} />
         </div>
       </div>
 
@@ -149,25 +281,14 @@ export default function SettingsPanel() {
             <span className="text-mono" style={{ color: 'var(--neon-primary)', fontSize: '0.8rem' }}>{hunter.totalExp.toLocaleString()}</span>
           </div>
         </div>
-
-        <div className="last-login text-mono">
-          เข้าสู่ระบบล่าสุด: {state.lastLoginDate || '—'}
-        </div>
+        <div className="last-login text-mono">เข้าสู่ระบบล่าสุด: {state.lastLoginDate || '—'}</div>
       </div>
 
       {/* Danger Zone */}
       <div className="settings-section danger-zone glass-panel">
-        <div className="settings-title text-display" style={{ color: 'var(--accent-red)' }}>
-          ⚠️ โซนอันตราย
-        </div>
-        <div className="settings-subtitle text-secondary">
-          การรีเซ็ตจะลบข้อมูลทั้งหมดอย่างถาวร — ส่งออกข้อมูลสำรองก่อนดำเนินการ
-        </div>
-        <button
-          className="btn btn-danger w-full"
-          onClick={handleReset}
-          id="reset-btn"
-        >
+        <div className="settings-title text-display" style={{ color: 'var(--accent-red)' }}>⚠️ โซนอันตราย</div>
+        <div className="settings-subtitle text-secondary">การรีเซ็ตจะลบข้อมูลทั้งหมดอย่างถาวร — ส่งออกข้อมูลสำรองก่อนดำเนินการ</div>
+        <button className="btn btn-danger w-full" onClick={handleReset} id="reset-btn">
           🗑️ รีเซ็ตข้อมูลทั้งหมด
         </button>
       </div>
@@ -181,6 +302,7 @@ export default function SettingsPanel() {
           Powered by THE-GOD-SYSTEM ✦ Auto-save enabled
         </div>
       </div>
+
     </div>
   );
 }

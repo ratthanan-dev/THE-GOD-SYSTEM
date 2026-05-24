@@ -83,6 +83,14 @@ const QUEST_TEMPLATES = {
     { title: 'ไม่ใช้โทรศัพท์ 1 ชั่วโมง', desc: 'สมาธิของผู้ล่าคือทรัพย์สินที่มีค่า', exp: 60, stat: 'sense', statGain: 2 },
     { title: 'อาบน้ำให้เสร็จก่อนเที่ยงคืน', desc: 'ชำระล้างร่างกายเพื่อรับพรแห่งการฟื้นฟู', exp: 100, stat: 'vit', statGain: 2 },
   ],
+  creative: [
+    { title: 'วาดภาพหรือหัดฝีมือ 1 ชิ้น', desc: 'ปลายปล่อยความคิดสร้างสรรค์ลงบนกระดาษ ไม่ต้องเก่งก็อนุญาตสร้าง', exp: 70, stat: 'sense', statGain: 2 },
+    { title: 'เขียนเรื่องสั้น กลอน หรือไอเดีย 1 ชิ้น', desc: 'ถ่ายทอดความคิดสร้างสรรค์ลงเป็นการเขียน', exp: 80, stat: 'int', statGain: 2 },
+    { title: 'เรียนทักษะใหม่ 1 อย่าง (YouTube/Tutorial)', desc: 'รับสิ่งใหม่เข้าเสมอ ความคิดสร้างสรรค์ต้องการอาหารใหม่', exp: 90, stat: 'int', statGain: 2 },
+    { title: 'ถ่ายภาพสวยๆ 5 รูป', desc: 'เปิดตามองโลกด้วยสายตาของศิลปิน', exp: 50, stat: 'sense', statGain: 2 },
+    { title: 'ทำ DIY หรืองานฝีมือสักอย่าง', desc: 'ใช้มือเป็นเครื่องมือแห่งการสร้างสรรค์', exp: 100, stat: 'str', statGain: 1 },
+    { title: 'ฟังเพลงแนวใหม่ 3 เพลง', desc: 'เปิดหูให้กว้างและรับแรงบันดาลใจจากอารมณ์เสียง', exp: 40, stat: 'sense', statGain: 1 },
+  ],
 };
 
 // ============================================
@@ -113,6 +121,7 @@ function createInitialState() {
       hunterName: '',
       goals: [],
     },
+    aiMessages: [],
     initialized: false,
   };
 }
@@ -173,8 +182,22 @@ function gameReducer(state, action) {
         };
         payload.quests = [showerQuest, ...(payload.quests || [])];
       }
-      return { ...payload, notifications: [], showLevelUp: false, showPenalty: false };
+      return {
+        ...state,          // ← base: preserve all existing fields (aiMessages, activeTab, etc.)
+        ...payload,        // ← override with Firestore data
+        notifications: [],
+        showLevelUp: false,
+        showPenalty: false,
+        aiMessages: state.aiMessages || [],  // never wipe AI chat
+        aiConfig: state.aiConfig,            // always keep local AI config
+        activeTab: payload.activeTab || state.activeTab || 'status',
+        settings: {
+          ...state.settings,
+          ...(payload.settings || {}),
+        },
+      };
     }
+
 
     case 'SET_HUNTER_NAME':
       return {
@@ -307,6 +330,29 @@ function gameReducer(state, action) {
     case 'SET_INITIALIZED':
       return { ...state, initialized: true, lastLoginDate: new Date().toDateString() };
 
+    case 'SET_AI_CONFIG': {
+      // Store AI config in localStorage only (never synced to cloud)
+      try { localStorage.setItem('god_system_ai_config', JSON.stringify(action.config)); } catch {}
+      return {
+        ...state,
+        aiConfig: action.config,
+      };
+    }
+
+    case 'ADD_CUSTOM_QUEST': {
+      // Add an AI-generated quest to the quest list
+      return { ...state, quests: [...state.quests, action.quest] };
+    }
+
+    case 'ADD_AI_MESSAGE':
+      return {
+        ...state,
+        aiMessages: [...state.aiMessages, action.message],
+      };
+
+    case 'CLEAR_AI_CHAT':
+      return { ...state, aiMessages: [] };
+
     default:
       return state;
   }
@@ -320,7 +366,20 @@ const GameContext = createContext(null);
 const STORAGE_KEY = 'real_life_system_v1';
 
 export function GameProvider({ children, userId }) {
-  const [state, dispatch] = useReducer(gameReducer, createInitialState());
+  // Load AI config from localStorage on init (never stored in cloud)
+  const defaultAiConfig = { geminiKeys: [], groqKeys: [], preferredProvider: 'auto' };
+  const initialState = (() => {
+    const base = createInitialState();
+    try {
+      const raw = localStorage.getItem('god_system_ai_config');
+      base.aiConfig = raw ? JSON.parse(raw) : defaultAiConfig;
+    } catch {
+      base.aiConfig = defaultAiConfig;
+    }
+    return base;
+  })();
+
+  const [state, dispatch] = useReducer(gameReducer, initialState);
   const [cloudLoaded, setCloudLoaded] = useState(false);
   const saveTimeoutRef = useRef(null);
 
@@ -381,6 +440,7 @@ export function GameProvider({ children, userId }) {
   useEffect(() => {
     if (!cloudLoaded || !userId) return;
 
+    // Exclude aiMessages + aiConfig from cloud save (stored locally only)
     const toSave = {
       hunter: state.hunter,
       quests: state.quests,
