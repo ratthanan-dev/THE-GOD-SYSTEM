@@ -95,6 +95,129 @@
   color: var(--accent-red);
 }
 
+/* ── History Toggle Button ── */
+.ai-history-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: var(--radius-sm);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.ai-history-btn:hover {
+  border-color: rgba(0, 255, 136, 0.5);
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.history-btn-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.history-btn-bars span {
+  width: 16px;
+  height: 2px;
+  background: rgba(0, 255, 136, 0.7);
+  border-radius: 100px;
+  transition: all var(--transition-fast);
+}
+
+.history-btn-bars span:nth-child(2) { width: 12px; }
+.history-btn-bars span:nth-child(3) { width: 8px; }
+
+.ai-history-btn:hover .history-btn-bars span {
+  background: #00ff88;
+}
+
+/* ── Header Actions ── */
+.ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ai-new-chat-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  color: #00ff88;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.ai-new-chat-btn:hover {
+  background: rgba(0, 255, 136, 0.1);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.2);
+}
+
+/* ── Session Title ── */
+.ai-session-title {
+  font-size: 0.55rem;
+  color: rgba(0, 255, 136, 0.4);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status Bar ── */
+.ai-status-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.55rem;
+  color: rgba(0, 255, 136, 0.5);
+  padding: 4px var(--space-md);
+  background: rgba(0, 10, 20, 0.5);
+  border: 1px solid rgba(0, 255, 136, 0.08);
+  border-radius: var(--radius-sm);
+}
+
+.ai-session-count {
+  margin-left: auto;
+  color: var(--text-muted);
+}
+
+/* ── Empty State ── */
+.ai-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl) 0;
+  flex: 1;
+}
+
+.ai-empty-icon {
+  font-size: 3rem;
+  color: rgba(0, 255, 136, 0.15);
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+}
+
+.ai-empty-text {
+  font-size: 0.85rem;
+  color: rgba(0, 255, 136, 0.5);
+  letter-spacing: 0.1em;
+}
+
+.ai-empty-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
 /* ─────────────────────────────────────────────
    Quick Action Buttons
 ───────────────────────────────────────────── */

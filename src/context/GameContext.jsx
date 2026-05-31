@@ -97,7 +97,19 @@ const QUEST_TEMPLATES = {
 // INITIAL STATE
 // ============================================
 
+function createDefaultSession() {
+  const id = `session_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  return {
+    id,
+    title: 'การสนทนาใหม่',
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+}
+
 function createInitialState() {
+  const defaultSession = createDefaultSession();
   return {
     hunter: {
       name: 'ฮันเตอร์ไม่ระบุชื่อ',
@@ -122,6 +134,8 @@ function createInitialState() {
       goals: [],
     },
     aiMessages: [],
+    chatSessions: [defaultSession],
+    activeChatSessionId: defaultSession.id,
     initialized: false,
   };
 }
@@ -344,14 +358,77 @@ function gameReducer(state, action) {
       return { ...state, quests: [...state.quests, action.quest] };
     }
 
-    case 'ADD_AI_MESSAGE':
+    case 'ADD_AI_MESSAGE': {
+      const newMessages = [...state.aiMessages, action.message];
+      // Also update the active session
+      const updatedSessions = state.chatSessions.map(s => {
+        if (s.id === state.activeChatSessionId) {
+          // Auto-title from first user message
+          let title = s.title;
+          if (title === 'การสนทนาใหม่' && action.message.role === 'user') {
+            title = action.message.content.slice(0, 30) + (action.message.content.length > 30 ? '...' : '');
+          }
+          return { ...s, messages: newMessages, title, updatedAt: Date.now() };
+        }
+        return s;
+      });
       return {
         ...state,
-        aiMessages: [...state.aiMessages, action.message],
+        aiMessages: newMessages,
+        chatSessions: updatedSessions,
       };
+    }
 
-    case 'CLEAR_AI_CHAT':
-      return { ...state, aiMessages: [] };
+    case 'CLEAR_AI_CHAT': {
+      // Clear current session messages
+      const clearedSessions = state.chatSessions.map(s =>
+        s.id === state.activeChatSessionId
+          ? { ...s, messages: [], title: 'การสนทนาใหม่', updatedAt: Date.now() }
+          : s
+      );
+      return { ...state, aiMessages: [], chatSessions: clearedSessions };
+    }
+
+    case 'CREATE_CHAT_SESSION': {
+      const newSession = createDefaultSession();
+      return {
+        ...state,
+        chatSessions: [newSession, ...state.chatSessions],
+        activeChatSessionId: newSession.id,
+        aiMessages: [],
+      };
+    }
+
+    case 'SWITCH_CHAT_SESSION': {
+      const targetSession = state.chatSessions.find(s => s.id === action.sessionId);
+      return {
+        ...state,
+        activeChatSessionId: action.sessionId,
+        aiMessages: targetSession ? targetSession.messages : [],
+      };
+    }
+
+    case 'DELETE_CHAT_SESSION': {
+      const remaining = state.chatSessions.filter(s => s.id !== action.sessionId);
+      // If deleting active session, switch to the first remaining or create new
+      if (remaining.length === 0) {
+        const fallback = createDefaultSession();
+        return {
+          ...state,
+          chatSessions: [fallback],
+          activeChatSessionId: fallback.id,
+          aiMessages: [],
+        };
+      }
+      const isActive = state.activeChatSessionId === action.sessionId;
+      const nextActive = isActive ? remaining[0] : remaining.find(s => s.id === state.activeChatSessionId) || remaining[0];
+      return {
+        ...state,
+        chatSessions: remaining,
+        activeChatSessionId: nextActive.id,
+        aiMessages: isActive ? nextActive.messages : state.aiMessages,
+      };
+    }
 
     default:
       return state;

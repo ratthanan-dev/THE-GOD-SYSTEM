@@ -1,0 +1,406 @@
+/* ============================================
+   CHAT HISTORY SIDEBAR
+   Solo Leveling × System Terminal UI
+   ============================================ */
+
+/* ─── Backdrop ─── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sidebar-backdrop.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ─── Sidebar Panel ─── */
+.chat-history-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  transform: translateX(-100%);
+  width: 280px;
+  max-width: 85vw;
+  height: 100dvh;
+  height: 100vh;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  background: rgba(0, 5, 18, 0.98);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border-right: 1px solid rgba(0, 212, 255, 0.2);
+  box-shadow: 4px 0 40px rgba(0, 0, 0, 0.8), 0 0 60px rgba(0, 212, 255, 0.05);
+  transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  overflow: hidden;
+}
+
+.chat-history-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Decorative scan line at top */
+.chat-history-sidebar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-primary), var(--accent-purple), transparent);
+  opacity: 0.6;
+}
+
+/* ─── Header ─── */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-md);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.12);
+  flex-shrink: 0;
+  background: rgba(0, 10, 30, 0.5);
+  min-height: 56px;
+}
+
+.sidebar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.sidebar-title-icon {
+  font-size: 1.3rem;
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+  animation: pulse-glow 3s ease infinite;
+}
+
+.sidebar-title-text {
+  font-size: 0.75rem;
+  letter-spacing: 0.2em;
+  color: var(--neon-primary);
+}
+
+.sidebar-close-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.sidebar-close-btn:hover {
+  border-color: rgba(255, 45, 85, 0.5);
+  color: var(--accent-red);
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.2);
+}
+
+/* ─── New Chat ─── */
+.sidebar-new-chat {
+  padding: var(--space-md);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.new-chat-btn {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  min-height: 44px;
+  background: linear-gradient(135deg, rgba(0, 180, 220, 0.2), rgba(0, 100, 180, 0.3));
+  border: 1px solid rgba(0, 212, 255, 0.35);
+  border-radius: var(--radius-md);
+  color: var(--neon-primary);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all var(--transition-fast);
+}
+
+.new-chat-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.25), rgba(0, 140, 200, 0.3));
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.new-chat-btn:active {
+  transform: scale(0.98);
+}
+
+/* ─── Sessions List ─── */
+.sidebar-sessions {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-sm) 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.2) transparent;
+}
+
+.sidebar-sessions::-webkit-scrollbar { width: 3px; }
+.sidebar-sessions::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.2);
+  border-radius: 100px;
+}
+
+/* ─── Session Group ─── */
+.session-group {
+  margin-bottom: var(--space-sm);
+}
+
+.session-group-label {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  padding: 6px var(--space-md) 4px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+  position: sticky;
+  top: 0;
+  background: rgba(0, 5, 18, 0.9);
+  z-index: 1;
+}
+
+/* ─── Session Item ─── */
+.session-item-wrapper {
+  position: relative;
+  overflow: hidden;
+  margin: 2px var(--space-sm);
+  border-radius: var(--radius-md);
+}
+
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--transition-fast);
+  border: 1px solid transparent;
+  background: rgba(0, 15, 40, 0.3);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.session-item:hover {
+  background: rgba(0, 212, 255, 0.06);
+  border-color: rgba(0, 212, 255, 0.1);
+}
+
+.session-item:active {
+  background: rgba(0, 212, 255, 0.1);
+  transform: scale(0.99);
+}
+
+/* Active session */
+.session-item.active {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: rgba(0, 212, 255, 0.25);
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.08);
+}
+
+.session-icon {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  width: 18px;
+  text-align: center;
+}
+
+.session-item.active .session-icon {
+  color: var(--neon-primary);
+  text-shadow: var(--glow-text);
+}
+
+.session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.session-title {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-body);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.session-item.active .session-title {
+  color: var(--text-primary);
+}
+
+.session-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-family: var(--font-mono);
+}
+
+/* Active bar */
+.session-active-bar {
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 2px;
+  background: var(--neon-primary);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--neon-primary);
+}
+
+/* ─── Delete Button ─── */
+.session-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  opacity: 0;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.session-item:hover .session-delete-btn {
+  opacity: 0.6;
+}
+
+.session-delete-btn:hover {
+  opacity: 1 !important;
+  color: var(--accent-red);
+  background: rgba(255, 45, 85, 0.15);
+}
+
+/* ─── Empty State ─── */
+.sidebar-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl) var(--space-lg);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+.sidebar-empty-icon {
+  font-size: 2rem;
+  opacity: 0.4;
+}
+
+/* ─── Footer ─── */
+.sidebar-footer {
+  flex-shrink: 0;
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid rgba(0, 212, 255, 0.08);
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  text-align: center;
+  letter-spacing: 0.08em;
+  background: rgba(0, 10, 30, 0.3);
+  font-family: var(--font-mono);
+}
+
+/* ─── Delete Confirm Modal ─── */
+.delete-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease;
+  padding: var(--space-lg);
+}
+
+.delete-confirm-modal {
+  width: 100%;
+  max-width: 300px;
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+  background: rgba(0, 10, 30, 0.95);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  animation: float-in 0.3s ease;
+}
+
+.delete-confirm-icon {
+  font-size: 2.5rem;
+}
+
+.delete-confirm-title {
+  font-size: 1rem;
+  letter-spacing: 0.1em;
+  color: var(--accent-red);
+  font-family: var(--font-display);
+}
+
+.delete-confirm-desc {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  font-family: var(--font-mono);
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: var(--space-md);
+  width: 100%;
+  margin-top: var(--space-sm);
+}
+
+.delete-confirm-actions .btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 0.82rem;
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, rgba(255, 45, 85, 0.3), rgba(180, 0, 50, 0.4));
+  border: 1px solid rgba(255, 45, 85, 0.4);
+  color: var(--accent-red);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all var(--transition-fast);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, rgba(255, 45, 85, 0.4), rgba(180, 0, 50, 0.5));
+  box-shadow: 0 0 15px rgba(255, 45, 85, 0.3);
+}

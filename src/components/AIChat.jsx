@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { callAI, QUICK_PROMPTS, parseQuestsFromResponse, stripQuestBlocks } from '../services/aiService';
+import ChatHistorySidebar from './ChatHistorySidebar';
 import './AIChat.css';
 
 const PROVIDER_LABELS = {
@@ -95,7 +96,7 @@ function NoApiKey() {
 // ─────────────────────────────────────────────
 export default function AIChat() {
   const { state, dispatch, computed } = useGame();
-  const { aiMessages, aiConfig, hunter, quests } = state;
+  const { aiMessages, aiConfig, hunter, quests, chatSessions, activeChatSessionId } = state;
   const config = aiConfig || { geminiKeys: [], groqKeys: [], preferredProvider: 'auto' };
 
   const totalKeys = (config.geminiKeys?.filter(k => k?.trim()).length || 0)
@@ -105,7 +106,12 @@ export default function AIChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeProvider, setActiveProvider] = useState(null);
   const [error, setError] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
+
+  // Active session info
+  const activeSession = (chatSessions || []).find(s => s.id === activeChatSessionId);
+  const sessionTitle = activeSession?.title || 'การสนทนาใหม่';
 
   // Auto-scroll
   useEffect(() => {
@@ -135,7 +141,7 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       };
       dispatch({ type: 'ADD_AI_MESSAGE', message: welcome });
     }
-  }, [totalKeys]);
+  }, [totalKeys, activeChatSessionId]);
 
   const sendMessage = async (text) => {
     if (!text.trim() || isLoading) return;
@@ -192,90 +198,145 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
   const handleQuickAction = (prompt) => { sendMessage(prompt); if (navigator.vibrate) navigator.vibrate(30); };
 
+  const handleNewChat = () => {
+    dispatch({ type: 'CREATE_CHAT_SESSION' });
+    if (navigator.vibrate) navigator.vibrate(20);
+  };
+
   if (totalKeys === 0) return <NoApiKey />;
 
   const geminiCount = config.geminiKeys?.filter(k => k?.trim()).length || 0;
   const groqCount = config.groqKeys?.filter(k => k?.trim()).length || 0;
 
   return (
-    <div className="ai-chat">
-      {/* Terminal Header */}
-      <div className="ai-header glass-panel corner-tl corner-tr">
-        <div className="ai-header-left">
+    <>
+      <ChatHistorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="ai-chat">
+        {/* ── Terminal Header ── */}
+        <div className="ai-header glass-panel corner-tl corner-tr">
+          <div className="ai-header-left">
+            {/* History Toggle */}
+            <button
+              className="ai-history-btn"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="ประวัติการแชท"
+              id="open-history-btn"
+            >
+              <span className="history-btn-bars">
+                <span /><span /><span />
+              </span>
+            </button>
+
+            <div>
+              <div className="ai-title text-display">THE SYSTEM</div>
+              <div className="ai-session-title text-mono">{sessionTitle}</div>
+            </div>
+          </div>
+
+          <div className="ai-header-actions">
+            {/* New Chat */}
+            <button
+              className="ai-new-chat-btn text-mono"
+              onClick={handleNewChat}
+              title="สร้างการสนทนาใหม่"
+              id="new-chat-header-btn"
+            >
+              ＋
+            </button>
+            {/* Clear current */}
+            <button
+              className="ai-clear-btn text-mono"
+              onClick={() => dispatch({ type: 'CLEAR_AI_CHAT' })}
+              title="ล้างการสนทนานี้"
+              id="clear-chat-btn"
+            >
+              🗑
+            </button>
+          </div>
+        </div>
+
+        {/* ── Status Bar ── */}
+        <div className="ai-status-bar text-mono">
           <div className="ai-status-dot" />
-          <div>
-            <div className="ai-title text-display">THE SYSTEM</div>
-            <div className="ai-subtitle text-mono">
-              {geminiCount > 0 && `✦ Gemini ×${geminiCount}`}
-              {geminiCount > 0 && groqCount > 0 && ' · '}
-              {groqCount > 0 && `⚡ Groq ×${groqCount}`}
-              {' · '}
-              {config.preferredProvider === 'auto' ? 'AUTO' : config.preferredProvider.toUpperCase()}
-            </div>
-          </div>
+          <span>
+            {geminiCount > 0 && `✦ Gemini ×${geminiCount}`}
+            {geminiCount > 0 && groqCount > 0 && ' · '}
+            {groqCount > 0 && `⚡ Groq ×${groqCount}`}
+            {' · '}
+            {config.preferredProvider === 'auto' ? 'AUTO' : config.preferredProvider.toUpperCase()}
+          </span>
+          <span className="ai-session-count">
+            {(chatSessions || []).length} sessions
+          </span>
         </div>
-        <button className="ai-clear-btn text-mono" onClick={() => dispatch({ type: 'CLEAR_AI_CHAT' })} title="ล้างประวัติ">
-          🗑
-        </button>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        {QUICK_PROMPTS.map(qp => (
-          <button
-            key={qp.id}
-            className="quick-action-btn text-mono"
-            onClick={() => handleQuickAction(qp.prompt)}
-            disabled={isLoading}
-            id={`quick-${qp.id}`}
-          >
-            {qp.label}
-          </button>
-        ))}
-      </div>
+        {/* Quick Actions */}
+        <div className="quick-actions">
+          {QUICK_PROMPTS.map(qp => (
+            <button
+              key={qp.id}
+              className="quick-action-btn text-mono"
+              onClick={() => handleQuickAction(qp.prompt)}
+              disabled={isLoading}
+              id={`quick-${qp.id}`}
+            >
+              {qp.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Messages */}
-      <div className="ai-messages">
-        {aiMessages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+        {/* Messages */}
+        <div className="ai-messages">
+          {aiMessages.length === 0 && !isLoading && (
+            <div className="ai-empty-state">
+              <div className="ai-empty-icon">⬡</div>
+              <div className="ai-empty-text text-mono">THE SYSTEM พร้อมรับคำสั่ง</div>
+              <div className="ai-empty-sub text-mono">พิมพ์คำถาม หรือเลือกคำสั่งด่วนด้านบน</div>
+            </div>
+          )}
 
-        {isLoading && (
-          <div className="ai-message system-msg">
-            <div className="system-avatar"><span className="system-avatar-icon">⬡</span></div>
-            <div className="message-bubble">
-              <div className="system-sender-row">
-                <span className="text-mono system-sender">THE SYSTEM</span>
-                <span className="text-mono" style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>กำลังประมวลผล...</span>
+          {aiMessages.map(msg => <MessageBubble key={msg.id} msg={msg} />)}
+
+          {isLoading && (
+            <div className="ai-message system-msg">
+              <div className="system-avatar"><span className="system-avatar-icon">⬡</span></div>
+              <div className="message-bubble">
+                <div className="system-sender-row">
+                  <span className="text-mono system-sender">THE SYSTEM</span>
+                  <span className="text-mono" style={{ fontSize: '0.55rem', color: 'var(--text-muted)' }}>กำลังประมวลผล...</span>
+                </div>
+                <div className="typing-dots"><span /><span /><span /></div>
               </div>
-              <div className="typing-dots"><span /><span /><span /></div>
             </div>
+          )}
+
+          {error && <div className="ai-error text-mono">⚠️ {error}</div>}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input */}
+        <form className="ai-input-area" onSubmit={handleSubmit}>
+          <div className="ai-input-row">
+            <input
+              type="text"
+              className="ai-input text-mono"
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              placeholder="พิมพ์คำถาม..."
+              disabled={isLoading}
+              id="ai-chat-input"
+              autoComplete="off"
+            />
+            <button type="submit" className={`ai-send-btn ${isLoading ? 'loading' : ''}`} disabled={!input.trim() || isLoading} id="ai-send-btn">
+              {isLoading ? <span className="send-spinner" /> : <span>⚡</span>}
+            </button>
           </div>
-        )}
-
-        {error && <div className="ai-error text-mono">⚠️ {error}</div>}
-        <div ref={messagesEndRef} />
+          <div className="ai-input-hint text-mono">
+            {isLoading ? 'กำลังประมวลผล...' : `${hunter.name} | LV.${hunter.level} ${hunter.rank}-CLASS · ${totalKeys} keys พร้อมใช้`}
+          </div>
+        </form>
       </div>
-
-      {/* Input */}
-      <form className="ai-input-area" onSubmit={handleSubmit}>
-        <div className="ai-input-row">
-          <input
-            type="text"
-            className="ai-input text-mono"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            placeholder="พิมพ์คำถาม..."
-            disabled={isLoading}
-            id="ai-chat-input"
-            autoComplete="off"
-          />
-          <button type="submit" className={`ai-send-btn ${isLoading ? 'loading' : ''}`} disabled={!input.trim() || isLoading} id="ai-send-btn">
-            {isLoading ? <span className="send-spinner" /> : <span>⚡</span>}
-          </button>
-        </div>
-        <div className="ai-input-hint text-mono">
-          {isLoading ? 'กำลังประมวลผล...' : `${hunter.name} | LV.${hunter.level} ${hunter.rank}-CLASS · ${totalKeys} keys พร้อมใช้`}
-        </div>
-      </form>
-    </div>
+    </>
   );
 }

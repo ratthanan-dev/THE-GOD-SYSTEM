@@ -196,11 +196,21 @@
   transition: all var(--transition-fast);
   min-height: 44px; /* iOS touch target */
   padding: var(--space-sm) 0;
+  border-radius: var(--radius-lg);
+  margin: 4px;
+  color: var(--text-muted);
+}
+
+.nav-tab.active {
+  background: rgba(0, 212, 255, 0.1);
+  box-shadow: inset 0 0 10px rgba(0, 212, 255, 0.05);
+  color: var(--neon-primary);
 }
 
 .nav-icon {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   transition: transform var(--transition-fast);
+  color: inherit;
 }
 
 .nav-tab:active .nav-icon {
@@ -210,31 +220,18 @@
 .nav-label {
   font-size: 0.55rem;
   letter-spacing: 0.1em;
-  color: var(--text-muted);
+  color: inherit;
   transition: color var(--transition-fast);
-}
-
-.nav-tab.active .nav-label {
-  color: var(--neon-primary);
-  text-shadow: 0 0 8px var(--neon-primary);
+  font-weight: 600;
 }
 
 .nav-tab.active .nav-icon {
   filter: drop-shadow(0 0 8px var(--neon-primary));
-  transform: translateY(-2px);
 }
 
 /* Active indicator line */
 .nav-indicator {
-  position: absolute;
-  top: 0;
-  left: 20%;
-  right: 20%;
-  height: 2px;
-  background: var(--neon-primary);
-  box-shadow: 0 0 8px var(--neon-primary), 0 0 16px rgba(0, 212, 255, 0.5);
-  border-radius: 100px;
-  animation: fade-in 0.2s ease;
+  display: none;
 }
 
 /* Desktop: show side gutter */

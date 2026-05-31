@@ -8,10 +8,10 @@ import { LevelUpOverlay, PenaltyOverlay, NotificationToast } from './components/
 import './AppShell.css';
 
 const TABS = [
-  { id: 'status', label: 'สถานะ', icon: '👤', shortLabel: 'STATUS' },
-  { id: 'quests', label: 'เควสต์', icon: '📋', shortLabel: 'QUEST' },
-  { id: 'ai', label: 'The System', icon: '🧠', shortLabel: 'A.I.' },
-  { id: 'settings', label: 'ตั้งค่า', icon: '⚙️', shortLabel: 'CONFIG' },
+  { id: 'status', label: 'สถานะ', icon: 'person', shortLabel: 'STATUS' },
+  { id: 'quests', label: 'เควสต์', icon: 'assignment', shortLabel: 'QUESTS' },
+  { id: 'ai', label: 'The System', icon: 'psychology', shortLabel: 'SYSTEM' },
+  { id: 'settings', label: 'ตั้งค่า', icon: 'settings', shortLabel: 'SETTINGS' },
 ];
 
 export default function AppShell() {
@@ -93,7 +93,12 @@ export default function AppShell() {
               id={`nav-${tab.id}`}
               aria-label={tab.label}
             >
-              <span className="nav-icon">{tab.icon}</span>
+              <span 
+                className="material-symbols-outlined nav-icon"
+                style={activeTab === tab.id ? { fontVariationSettings: "'FILL' 1" } : {}}
+              >
+                {tab.icon}
+              </span>
               <span className="nav-label text-mono">{tab.shortLabel}</span>
               {activeTab === tab.id && <div className="nav-indicator" />}
             </button>
