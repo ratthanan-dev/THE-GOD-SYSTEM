@@ -248,3 +248,331 @@
   letter-spacing: 0.03em;
   line-height: 1.5;
 }
+
+/* ============================================
+   ADD TASK BUTTON
+   ============================================ */
+.add-task-btn {
+  width: 100%;
+  margin-top: var(--space-md);
+  font-size: 0.85rem;
+  min-height: 44px;
+  letter-spacing: 0.05em;
+  font-family: var(--font-mono);
+}
+
+/* Filter count badge */
+.filter-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: rgba(0, 212, 255, 0.15);
+  border-radius: 100px;
+  font-size: 0.6rem;
+  margin-left: 4px;
+  color: var(--neon-primary);
+}
+
+.filter-tab.active .filter-count {
+  background: rgba(0, 212, 255, 0.3);
+}
+
+/* ============================================
+   CARD TOP — Timer + Icon Buttons Row
+   ============================================ */
+.quest-card-actions-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* Icon buttons (Edit/Delete) */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+  line-height: 1;
+}
+
+.icon-btn-edit {
+  border-color: rgba(0, 212, 255, 0.2);
+  color: var(--neon-dim);
+}
+
+.icon-btn-edit:hover {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: var(--border-bright);
+  transform: scale(1.1);
+}
+
+.icon-btn-delete {
+  border-color: rgba(255, 45, 85, 0.2);
+  color: rgba(255, 45, 85, 0.6);
+}
+
+.icon-btn-delete:hover {
+  background: rgba(255, 45, 85, 0.12);
+  border-color: rgba(255, 45, 85, 0.5);
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(255, 45, 85, 0.2);
+}
+
+/* User quest badge */
+.user-quest-badge {
+  font-size: 0.6rem;
+  color: var(--neon-dim);
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+}
+
+/* ============================================
+   DONE ROW — CLEARED + UNDO
+   ============================================ */
+.quest-done-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.quest-done-badge {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-sm);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--accent-green);
+  text-shadow: 0 0 8px var(--accent-green);
+  border: 1px solid rgba(0, 255, 136, 0.2);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 255, 136, 0.05);
+}
+
+.undo-btn {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.65rem;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.undo-btn:hover {
+  border-color: var(--border-bright);
+  color: var(--neon-primary);
+  background: rgba(0, 212, 255, 0.08);
+  text-shadow: 0 0 6px var(--neon-primary);
+}
+
+/* ============================================
+   MODAL OVERLAY + GLASS PANEL
+   ============================================ */
+.quest-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 5, 16, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--space-md);
+  padding-top: 80px;
+  animation: fade-in 0.15s ease;
+}
+
+.quest-modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90dvh;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  animation: slide-up 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  position: relative;
+}
+
+.quest-modal-sm {
+  max-width: 360px;
+}
+
+/* Modal Header */
+.quest-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+}
+
+.quest-modal-title {
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+}
+
+.quest-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-dim);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+}
+
+.quest-modal-close:hover {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  background: rgba(255, 45, 85, 0.08);
+}
+
+/* ============================================
+   FORM INPUTS
+   ============================================ */
+.quest-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.required-mark {
+  color: var(--accent-red);
+  margin-left: 2px;
+}
+
+.optional-mark {
+  color: var(--text-muted);
+  font-size: 0.65rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px var(--space-md);
+  background: rgba(0, 15, 40, 0.8);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  outline: none;
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.form-input:focus {
+  border-color: var(--border-bright);
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1), 0 0 15px rgba(0, 212, 255, 0.1);
+}
+
+.form-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--font-body);
+}
+
+/* ============================================
+   CATEGORY PILLS
+   ============================================ */
+.category-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.category-pill {
+  padding: 6px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--border-dim);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.category-pill:hover {
+  border-color: var(--border-panel);
+  color: var(--text-secondary);
+}
+
+.category-pill:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   AI EXP NOTICE
+   ============================================ */
+.ai-exp-notice {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 212, 255, 0.04);
+  border: 1px solid var(--border-dim);
+}
+
+/* ============================================
+   MODAL ACTIONS
+   ============================================ */
+.quest-modal-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+
+.quest-modal-actions .btn {
+  flex: 1;
+  min-height: 44px;
+  font-size: 0.85rem;
+}
+
+/* Delete confirm text */
+.delete-confirm-text {
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: var(--space-md);
+  color: var(--text-secondary);
+}

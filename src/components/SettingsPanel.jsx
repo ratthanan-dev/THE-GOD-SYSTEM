@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useGame } from '../context/GameContext';
+import { useGame, getGameDay } from '../context/GameContext';
 import './SettingsPanel.css';
 
 // ─────────────────────────────────────────────
@@ -135,6 +135,41 @@ export default function SettingsPanel() {
           <div className="form-row">
             <input ref={nameRef} type="text" className="system-input" defaultValue={hunter.name} placeholder="ใส่ชื่อฮันเตอร์..." maxLength={20} id="hunter-name-input" />
             <button className="btn btn-primary" onClick={handleSaveName} id="save-name-btn">บันทึก</button>
+          </div>
+        </div>
+
+        {/* Day Reset Hour */}
+        <div className="form-group" style={{ marginTop: '1rem' }}>
+          <label className="form-label text-mono">
+            🌙 วันใหม่เริ่มเมื่อ
+            <span className="form-label-hint"> · เควสต์จะรีเซ็ตตามเวลานี้</span>
+          </label>
+          <div className="reset-hour-pills">
+            {[
+              { h: 0, label: '00:00', note: 'เที่ยงคืน' },
+              { h: 2, label: '02:00', note: 'ตี 2' },
+              { h: 3, label: '03:00', note: 'ตี 3' },
+              { h: 4, label: '04:00', note: 'ตี 4 (แนะนำ)' },
+              { h: 5, label: '05:00', note: 'ตี 5' },
+            ].map(({ h, label, note }) => {
+              const active = (state.settings?.dayResetHour ?? 4) === h;
+              return (
+                <button
+                  key={h}
+                  className={`reset-hour-pill text-mono ${active ? 'active' : ''}`}
+                  onClick={() => dispatch({ type: 'UPDATE_SETTINGS', patch: { dayResetHour: h } })}
+                  id={`reset-hour-${h}`}
+                >
+                  <span className="reset-hour-time">{label}</span>
+                  <span className="reset-hour-note">{note}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="reset-hour-info text-mono">
+            📅 วันเกมปัจจุบัน: <span style={{ color: 'var(--neon-primary)' }}>
+              {getGameDay(state.settings?.dayResetHour ?? 4)}
+            </span>
           </div>
         </div>
       </div>

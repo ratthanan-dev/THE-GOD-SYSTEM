@@ -295,3 +295,66 @@
   font-size: 0.8rem;
   flex-shrink: 0;
 }
+
+/* ─── Day Reset Hour Picker ─── */
+.reset-hour-pills {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-sm);
+}
+
+.reset-hour-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 14px;
+  background: rgba(0, 20, 50, 0.6);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  min-width: 60px;
+}
+
+.reset-hour-pill:hover {
+  border-color: var(--border-panel);
+  color: var(--text-secondary);
+}
+
+.reset-hour-pill.active {
+  background: rgba(0, 212, 255, 0.12);
+  border-color: var(--border-bright);
+  box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+}
+
+.reset-hour-time {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--neon-primary);
+  letter-spacing: 0.05em;
+}
+
+.reset-hour-pill:not(.active) .reset-hour-time {
+  color: var(--text-secondary);
+}
+
+.reset-hour-note {
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.reset-hour-pill.active .reset-hour-note {
+  color: rgba(0, 212, 255, 0.6);
+}
+
+.reset-hour-info {
+  margin-top: var(--space-sm);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}

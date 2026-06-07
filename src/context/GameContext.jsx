@@ -220,6 +220,8 @@ function gameReducer(state, action) {
         showLevelUp: false,
         showPenalty: false,
         aiMessages: state.aiMessages || [],  // never wipe AI chat
+        chatSessions: state.chatSessions,    // preserve chat sessions
+        activeChatSessionId: state.activeChatSessionId, // preserve active session
         aiConfig: state.aiConfig,            // always keep local AI config
         activeTab: payload.activeTab || state.activeTab || 'status',
         settings: {
@@ -523,8 +525,16 @@ export function GameProvider({ children, userId }) {
   const initialState = (() => {
     const base = createInitialState();
     try {
-      const raw = localStorage.getItem('god_system_ai_config');
-      base.aiConfig = raw ? JSON.parse(raw) : defaultAiConfig;
+      const rawConfig = localStorage.getItem('god_system_ai_config');
+      base.aiConfig = rawConfig ? JSON.parse(rawConfig) : defaultAiConfig;
+
+      const rawChat = localStorage.getItem('god_system_ai_chat');
+      if (rawChat) {
+        const chatData = JSON.parse(rawChat);
+        base.aiMessages = chatData.aiMessages || [];
+        base.chatSessions = chatData.chatSessions || base.chatSessions;
+        base.activeChatSessionId = chatData.activeChatSessionId || base.activeChatSessionId;
+      }
     } catch {
       base.aiConfig = defaultAiConfig;
     }
@@ -609,6 +619,14 @@ export function GameProvider({ children, userId }) {
     // Save to localStorage immediately (offline backup)
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+      
+      // Save AI Chat history locally
+      const chatSave = {
+        aiMessages: state.aiMessages,
+        chatSessions: state.chatSessions,
+        activeChatSessionId: state.activeChatSessionId
+      };
+      localStorage.setItem('god_system_ai_chat', JSON.stringify(chatSave));
     } catch {}
 
     // Debounce cloud saves to avoid excessive writes
@@ -624,7 +642,7 @@ export function GameProvider({ children, userId }) {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [state.hunter, state.quests, state.lastLoginDate, state.settings, state.initialized, cloudLoaded, userId]);
+  }, [state.hunter, state.quests, state.lastLoginDate, state.settings, state.initialized, state.aiMessages, state.chatSessions, state.activeChatSessionId, cloudLoaded, userId]);
 
   // ── Export save data ──
   const exportData = useCallback(() => {
