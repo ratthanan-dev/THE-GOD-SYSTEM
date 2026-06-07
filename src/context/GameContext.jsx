@@ -54,6 +54,22 @@ function getRankForLevel(level) {
 }
 
 // ============================================
+// GAME DAY HELPER
+// A "game day" starts at resetHour (e.g. 4 AM)
+// So 00:00–03:59 still counts as the previous day.
+// ============================================
+export function getGameDay(resetHour = 4) {
+  const now = new Date();
+  if (now.getHours() < resetHour) {
+    // Still the previous game-day — subtract one day
+    const prev = new Date(now);
+    prev.setDate(prev.getDate() - 1);
+    return prev.toDateString();
+  }
+  return now.toDateString();
+}
+
+// ============================================
 // QUEST TEMPLATES
 // ============================================
 
@@ -132,6 +148,7 @@ function createInitialState() {
     settings: {
       hunterName: '',
       goals: [],
+      dayResetHour: 4,
     },
     aiMessages: [],
     chatSessions: [defaultSession],
@@ -266,16 +283,25 @@ function gameReducer(state, action) {
     }
 
     case 'DAILY_RESET': {
-      const newQuests = generateDailyQuests();
+      const newDailyQuests = generateDailyQuests();
+      const carryOverQuests = state.quests.filter(q => {
+        if (q.source !== 'user') return false;
+        if (q.completed) return false;
+        if (!q.deadline) return false;
+        return new Date(q.deadline) >= new Date();
+      });
+      
+      const newQuests = [...newDailyQuests, ...carryOverQuests];
       const notification = {
         id: Date.now(),
         type: 'system',
         message: '🚨 [เควสต์รายวันใหม่มาถึงแล้ว] — เตรียมพร้อมสำหรับภารกิจ!',
       };
+      const resetHour = state.settings?.dayResetHour ?? 4;
       return {
         ...state,
         quests: newQuests,
-        lastLoginDate: new Date().toDateString(),
+        lastLoginDate: getGameDay(resetHour),
         notifications: [...state.notifications, notification],
       };
     }
@@ -341,8 +367,15 @@ function gameReducer(state, action) {
     case 'RESET_DATA':
       return { ...createInitialState(), initialized: false };
 
+    case 'UPDATE_SETTINGS': {
+      return {
+        ...state,
+        settings: { ...state.settings, ...action.patch },
+      };
+    }
+
     case 'SET_INITIALIZED':
-      return { ...state, initialized: true, lastLoginDate: new Date().toDateString() };
+      return { ...state, initialized: true, lastLoginDate: getGameDay(state.settings?.dayResetHour ?? 4) };
 
     case 'SET_AI_CONFIG': {
       // Store AI config in localStorage only (never synced to cloud)
@@ -356,6 +389,48 @@ function gameReducer(state, action) {
     case 'ADD_CUSTOM_QUEST': {
       // Add an AI-generated quest to the quest list
       return { ...state, quests: [...state.quests, action.quest] };
+    }
+
+    case 'CREATE_QUEST': {
+      // Add a user-created quest with AI-evaluated EXP
+      const newQuest = {
+        id: `quest_user_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        title: action.title,
+        desc: action.desc || '',
+        exp: action.exp || 60,
+        stat: action.stat || 'int',
+        statGain: action.statGain || 1,
+        category: action.category || 'daily',
+        completed: false,
+        type: 'user_custom',
+        deadline: action.deadline || null,
+        source: 'user',
+      };
+      return { ...state, quests: [...state.quests, newQuest] };
+    }
+
+    case 'UPDATE_QUEST': {
+      const updated = state.quests.map(q =>
+        q.id === action.questId
+          ? { ...q, title: action.title, desc: action.desc }
+          : q
+      );
+      return { ...state, quests: updated };
+    }
+
+    case 'DELETE_QUEST': {
+      return {
+        ...state,
+        quests: state.quests.filter(q => q.id !== action.questId),
+      };
+    }
+
+    case 'UNDO_QUEST': {
+      // Revert completed quest back to active — no EXP deduction (Option B)
+      const undone = state.quests.map(q =>
+        q.id === action.questId ? { ...q, completed: false } : q
+      );
+      return { ...state, quests: undone };
     }
 
     case 'ADD_AI_MESSAGE': {
@@ -474,9 +549,14 @@ export function GameProvider({ children, userId }) {
           dispatch({ type: 'LOAD_STATE', payload: data });
 
           // Check for daily reset
-          const today = new Date().toDateString();
+          const resetHour = data.settings?.dayResetHour ?? 4;
+          const today = getGameDay(resetHour);
           if (data.lastLoginDate !== today) {
-            const incompleteCount = (data.quests || []).filter(q => !q.completed).length;
+            const incompleteCount = (data.quests || []).filter(q => {
+              if (q.completed) return false;
+              if (!q.deadline) return true;
+              return new Date(q.deadline) < new Date();
+            }).length;
             if (incompleteCount > 0 && data.lastLoginDate) {
               setTimeout(() => {
                 dispatch({
