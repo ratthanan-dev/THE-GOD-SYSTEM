@@ -576,3 +576,217 @@
   margin-bottom: var(--space-md);
   color: var(--text-secondary);
 }
+
+/* ============================================
+   PRIORITY, TAGS, SUBTASKS
+   ============================================ */
+
+/* Priority Pills in Modal */
+.priority-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.priority-pill {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.priority-pill:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.priority-pill.active {
+  border-color: var(--accent-blue);
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.2);
+}
+
+/* Subtasks in Modal */
+.subtasks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subtask-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-dim);
+}
+
+.subtask-title {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+}
+
+.subtask-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.subtask-remove:hover {
+  color: var(--accent-red);
+}
+
+/* Priority Badges in Card */
+.priority-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 8px;
+}
+
+.priority-badge.high {
+  background: rgba(255, 45, 85, 0.1);
+  color: var(--accent-red);
+  border: 1px solid rgba(255, 45, 85, 0.3);
+}
+
+.priority-badge.medium {
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--accent-yellow);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+}
+
+.priority-badge.low {
+  background: rgba(0, 212, 255, 0.1);
+  color: var(--accent-blue);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+}
+
+/* Subtasks Checklist in Card */
+.quest-subtasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-sm);
+  border-left: 2px solid var(--border-dim);
+}
+
+.quest-subtask {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.quest-subtask:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.subtask-checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1px solid var(--text-muted);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--accent-blue);
+  transition: all 0.2s ease;
+}
+
+.quest-subtask.completed .subtask-checkbox {
+  border-color: var(--accent-blue);
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.quest-subtask.completed .subtask-text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.subtask-text {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+/* Tags in Card */
+.quest-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.quest-tag {
+  font-size: 0.65rem;
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   MARKDOWN, DND, RECURRENCE
+   ============================================ */
+.markdown-content {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.markdown-content p {
+  margin: 0 0 6px 0;
+}
+
+.markdown-content p:last-child {
+  margin: 0;
+}
+
+.markdown-content a {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+.markdown-content strong {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.recurrence-icon {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-left: auto;
+}
+
+.quest-card.dragging {
+  opacity: 0.5;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  transform: scale(0.98);
+  border-color: var(--accent-blue);
+}

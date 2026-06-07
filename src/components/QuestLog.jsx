@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useGame } from '../context/GameContext';
-import QuestTimer, { DeadlineModal } from './QuestTimer';
 import { callAI } from '../services/aiService';
+import QuestTimer, { DeadlineModal } from './QuestTimer';
+import ReactMarkdown from 'react-markdown';
 import './QuestLog.css';
 import './QuestTimer.css';
 
@@ -65,6 +66,21 @@ function QuestFormModal({ mode = 'add', initialData = {}, onSubmit, onClose, isL
   const [desc, setDesc] = useState(initialData.desc || '');
   const [category, setCategory] = useState(initialData.category || 'daily');
   const [deadlineDays, setDeadlineDays] = useState(0);
+  const [priority, setPriority] = useState(initialData.priority || 'low');
+  const [recurrence, setRecurrence] = useState(initialData.recurrence || 'none');
+  const [tagsInput, setTagsInput] = useState((initialData.tags || []).join(', '));
+  const [subtasks, setSubtasks] = useState(initialData.subtasks || []);
+  const [newSubtask, setNewSubtask] = useState('');
+
+  const addSubtask = () => {
+    if (!newSubtask.trim()) return;
+    setSubtasks([...subtasks, { id: Date.now().toString(), title: newSubtask.trim(), completed: false }]);
+    setNewSubtask('');
+  };
+
+  const removeSubtask = (id) => {
+    setSubtasks(subtasks.filter(st => st.id !== id));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -78,7 +94,8 @@ function QuestFormModal({ mode = 'add', initialData = {}, onSubmit, onClose, isL
       deadline = d.toISOString();
     }
     
-    onSubmit({ title: title.trim(), desc: desc.trim(), category, deadline });
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(Boolean);
+    onSubmit({ title: title.trim(), desc: desc.trim(), category, deadline, priority, tags, subtasks, recurrence });
   };
 
   return (
@@ -122,6 +139,66 @@ function QuestFormModal({ mode = 'add', initialData = {}, onSubmit, onClose, isL
             />
           </div>
 
+          {/* Priority selector */}
+          <div className="form-group">
+            <label className="form-label text-mono">ระดับความสำคัญ</label>
+            <div className="priority-pills">
+              {[
+                { val: 'high', label: '🔴 High' },
+                { val: 'medium', label: '🟡 Medium' },
+                { val: 'low', label: '🔵 Low' }
+              ].map(p => (
+                <button
+                  type="button"
+                  key={p.val}
+                  className={`priority-pill ${priority === p.val ? 'active' : ''}`}
+                  onClick={() => setPriority(p.val)}
+                  disabled={isLoading}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="form-group">
+            <label className="form-label text-mono">แท็ก (Tags) <span className="optional-mark">คั่นด้วยลูกน้ำ (,)</span></label>
+            <input
+              className="form-input"
+              type="text"
+              placeholder="เช่น #urgent, work, shopping"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              disabled={isLoading}
+            />
+          </div>
+
+          {/* Subtasks */}
+          <div className="form-group">
+            <label className="form-label text-mono">งานย่อย (Subtasks)</label>
+            <div className="subtasks-container">
+              {subtasks.map(st => (
+                <div key={st.id} className="subtask-item">
+                  <span className="subtask-title">{st.title}</span>
+                  <button type="button" className="subtask-remove" onClick={() => removeSubtask(st.id)}>✕</button>
+                </div>
+              ))}
+              <div className="subtask-input-row" style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <input
+                  className="form-input subtask-input"
+                  type="text"
+                  placeholder="เพิ่มงานย่อย..."
+                  value={newSubtask}
+                  onChange={(e) => setNewSubtask(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSubtask(); } }}
+                  disabled={isLoading}
+                />
+                <button type="button" className="btn btn-secondary subtask-add-btn" onClick={addSubtask} style={{ padding: '0 16px' }}>เพิ่ม</button>
+              </div>
+            </div>
+          </div>
+
           {/* Category selector — only for Add mode */}
           {mode === 'add' && (
             <div className="form-group">
@@ -161,6 +238,23 @@ function QuestFormModal({ mode = 'add', initialData = {}, onSubmit, onClose, isL
                 <option value={2}>มะรืนนี้ (+2 วัน)</option>
                 <option value={3}>3 วัน</option>
                 <option value={7}>1 สัปดาห์</option>
+              </select>
+            </div>
+          )}
+
+          {/* Recurrence */}
+          {mode === 'add' && (
+            <div className="form-group">
+              <label className="form-label text-mono">การทำซ้ำ (Recurrence)</label>
+              <select
+                className="form-input"
+                style={{ appearance: 'none', background: 'rgba(20,20,30,0.5)' }}
+                value={recurrence}
+                onChange={(e) => setRecurrence(e.target.value)}
+                disabled={isLoading}
+              >
+                <option value="none">ไม่ทำซ้ำ (One-time)</option>
+                <option value="daily">ทำซ้ำทุกวัน (Daily)</option>
               </select>
             </div>
           )}
@@ -236,11 +330,68 @@ export default function QuestLog() {
   const activeCount = quests.filter(q => !q.completed).length;
   const totalCount = quests.length;
 
-  const filteredQuests = filter === 'all'
-    ? quests
-    : filter === 'active'
-      ? quests.filter(q => !q.completed)
-      : quests.filter(q => q.completed);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [smartFilter, setSmartFilter] = useState('all');
+
+  // Compute final filtered & sorted quests
+  const getProcessedQuests = () => {
+    let result = quests;
+
+    // 1. Base status filter (all, active, done)
+    if (filter === 'active') result = result.filter(q => !q.completed);
+    if (filter === 'done') result = result.filter(q => q.completed);
+
+    // 2. Search query
+    if (searchQuery.trim()) {
+      const lowerQ = searchQuery.toLowerCase();
+      result = result.filter(q => 
+        q.title.toLowerCase().includes(lowerQ) || 
+        (q.desc && q.desc.toLowerCase().includes(lowerQ)) ||
+        (q.tags && q.tags.some(t => t.toLowerCase().includes(lowerQ)))
+      );
+    }
+
+    // 3. Smart Filter
+    if (smartFilter !== 'all') {
+      const now = new Date();
+      if (smartFilter === 'myday') {
+        result = result.filter(q => {
+          if (!q.deadline) return true; // consider no deadline as today
+          const d = new Date(q.deadline);
+          return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+        });
+      } else if (smartFilter === 'upcoming') {
+        result = result.filter(q => {
+          if (!q.deadline) return false;
+          const d = new Date(q.deadline);
+          d.setHours(0,0,0,0);
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          return d > today;
+        });
+      } else if (['high', 'medium', 'low'].includes(smartFilter)) {
+        result = result.filter(q => q.priority === smartFilter);
+      }
+    }
+
+    // 4. Sort
+    if (sortBy === 'priority') {
+      const pLevel = { high: 3, medium: 2, low: 1 };
+      result = [...result].sort((a, b) => (pLevel[b.priority] || 1) - (pLevel[a.priority] || 1));
+    } else if (sortBy === 'date_asc') {
+      result = [...result].sort((a, b) => {
+        if (!a.deadline) return 1;
+        if (!b.deadline) return -1;
+        return new Date(a.deadline) - new Date(b.deadline);
+      });
+    }
+
+    return result;
+  };
+
+  const filteredQuests = getProcessedQuests();
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleComplete = (questId) => {
@@ -268,8 +419,13 @@ export default function QuestLog() {
     setDeadlineModal(null);
   };
 
+  const handleToggleSubtask = (questId, subtaskId) => {
+    dispatch({ type: 'TOGGLE_SUBTASK', questId, subtaskId });
+    if (navigator.vibrate) navigator.vibrate(20);
+  };
+
   // ── Add Quest (with AI EXP) ────────────────────────────────────────────────
-  const handleAddSubmit = useCallback(async ({ title, desc, category, deadline }) => {
+  const handleAddSubmit = useCallback(async ({ title, desc, category, deadline, priority, tags, subtasks, recurrence }) => {
     setAiLoading(true);
     let expData = { exp: 60, ...CATEGORY_STAT_DEFAULT[category] || { stat: 'int', statGain: 1 } };
 
@@ -285,6 +441,10 @@ export default function QuestLog() {
       desc,
       category,
       deadline,
+      priority,
+      tags,
+      subtasks,
+      recurrence,
       ...expData,
     });
 
@@ -293,10 +453,35 @@ export default function QuestLog() {
   }, [dispatch, state.aiConfig]);
 
   // ── Edit Quest ─────────────────────────────────────────────────────────────
-  const handleEditSubmit = useCallback(({ title, desc }) => {
-    dispatch({ type: 'UPDATE_QUEST', questId: editModal.id, title, desc });
+  const handleEditSubmit = useCallback(({ title, desc, deadline, priority, tags, subtasks, recurrence }) => {
+    dispatch({ type: 'UPDATE_QUEST', questId: editModal.id, title, desc, priority, tags, subtasks, recurrence });
     setEditModal(null);
   }, [dispatch, editModal]);
+
+  // ── Drag & Drop ────────────────────────────────────────────────────────────
+  const handleDragStart = (e, questId) => {
+    if (sortBy !== 'default' || filter !== 'all' || smartFilter !== 'all') return;
+    e.dataTransfer.setData('questId', questId);
+    e.currentTarget.classList.add('dragging');
+  };
+
+  const handleDragEnd = (e) => {
+    e.currentTarget.classList.remove('dragging');
+  };
+
+  const handleDragOver = (e) => {
+    if (sortBy !== 'default' || filter !== 'all' || smartFilter !== 'all') return;
+    e.preventDefault();
+  };
+
+  const handleDrop = (e, targetId) => {
+    if (sortBy !== 'default' || filter !== 'all' || smartFilter !== 'all') return;
+    e.preventDefault();
+    const sourceId = e.dataTransfer.getData('questId');
+    if (sourceId && sourceId !== targetId) {
+      dispatch({ type: 'REORDER_QUESTS', sourceId, targetId });
+    }
+  };
 
   // ── Delete Quest ───────────────────────────────────────────────────────────
   const handleDeleteConfirm = useCallback(() => {
@@ -310,10 +495,58 @@ export default function QuestLog() {
     <div className="quest-log">
       {/* ── Header ── */}
       <div className="quest-header glass-panel corner-tl corner-tr">
-        <div className="quest-header-title text-display">
-          📋 บันทึกเควสต์
+        <div className="quest-header-top-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="quest-header-title text-display">
+            📋 บันทึกเควสต์
+          </div>
+          <button 
+            className={`icon-btn hamburger-btn ${showAdvanced ? 'active' : ''}`}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            aria-label="ค้นหาและตัวกรอง"
+            style={{ fontSize: '1.2rem', padding: '4px 8px' }}
+          >
+            {showAdvanced ? '✕' : '☰'}
+          </button>
         </div>
-        <div className="quest-progress-overview">
+        
+        {showAdvanced && (
+          <div className="advanced-filters-panel" style={{ marginTop: '16px', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px' }}>
+            <div className="form-group" style={{ marginBottom: '12px' }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="🔍 ค้นหางาน, แท็ก..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ flex: 1, minWidth: '120px' }}>
+                <label className="form-label text-mono">ตัวกรองอัจฉริยะ</label>
+                <select className="form-input" value={smartFilter} onChange={e => setSmartFilter(e.target.value)} style={{ padding: '8px' }}>
+                  <option value="all">ทั้งหมด</option>
+                  <option value="myday">⭐ งานวันนี้ (My Day)</option>
+                  <option value="upcoming">📅 ล่วงหน้า (Upcoming)</option>
+                  <option value="high">🔴 สำคัญมาก (High)</option>
+                  <option value="medium">🟡 ปานกลาง (Medium)</option>
+                  <option value="low">🔵 ทั่วไป (Low)</option>
+                </select>
+              </div>
+              
+              <div className="form-group" style={{ flex: 1, minWidth: '120px' }}>
+                <label className="form-label text-mono">เรียงลำดับ</label>
+                <select className="form-input" value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '8px' }}>
+                  <option value="default">ปกติ (ตามที่สร้าง)</option>
+                  <option value="priority">🔥 ความสำคัญสูงสุด</option>
+                  <option value="date_asc">⏳ ใกล้ครบกำหนดที่สุด</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="quest-progress-overview" style={{ marginTop: '16px' }}>
           <div className="quest-count text-mono">
             {completedCount}/{totalCount} ภารกิจสำเร็จ
           </div>
@@ -384,6 +617,11 @@ export default function QuestLog() {
               key={quest.id}
               className={`quest-card glass-panel ${quest.completed ? 'completed' : ''} ${isCompleting ? 'completing' : ''}`}
               style={{ animationDelay: `${idx * 0.08}s`, '--cat-color': catCfg.color }}
+              draggable={sortBy === 'default' && filter === 'all' && smartFilter === 'all'}
+              onDragStart={(e) => handleDragStart(e, quest.id)}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, quest.id)}
             >
               {/* Category Tag + Timer Row */}
               <div className="quest-card-top">
@@ -436,13 +674,40 @@ export default function QuestLog() {
               {/* Quest Content */}
               <div className="quest-content">
                 <div className="quest-title-row">
+                  {quest.priority === 'high' && <span className="priority-badge high">🔴 High</span>}
+                  {quest.priority === 'medium' && <span className="priority-badge medium">🟡 Med</span>}
+                  {quest.priority === 'low' && <span className="priority-badge low">🔵 Low</span>}
                   <div className={`quest-title ${quest.completed ? 'done' : ''}`}>
                     {quest.completed && <span className="checkmark">✓</span>}
                     {quest.title}
                   </div>
+                  {quest.recurrence === 'daily' && <span className="recurrence-icon" title="ทำซ้ำทุกวัน">🔁</span>}
                 </div>
                 {quest.desc && (
-                  <div className="quest-desc text-secondary">{quest.desc}</div>
+                  <div className="quest-desc text-secondary markdown-content">
+                    <ReactMarkdown>{quest.desc}</ReactMarkdown>
+                  </div>
+                )}
+                
+                {/* Subtasks */}
+                {quest.subtasks && quest.subtasks.length > 0 && (
+                  <div className="quest-subtasks-list">
+                    {quest.subtasks.map(st => (
+                      <div key={st.id} className={`quest-subtask ${st.completed ? 'completed' : ''}`} onClick={() => !quest.completed && handleToggleSubtask(quest.id, st.id)}>
+                        <div className="subtask-checkbox">{st.completed ? '✓' : ''}</div>
+                        <span className="subtask-text">{st.title}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Tags */}
+                {quest.tags && quest.tags.length > 0 && (
+                  <div className="quest-tags-list">
+                    {quest.tags.map(tag => (
+                      <span key={tag} className="quest-tag text-mono">#{tag}</span>
+                    ))}
+                  </div>
                 )}
 
                 {/* Rewards */}
@@ -468,7 +733,7 @@ export default function QuestLog() {
                 <button
                   className={`btn btn-success quest-complete-btn ${isCompleting ? 'completing' : ''}`}
                   onClick={() => handleComplete(quest.id)}
-                  disabled={!!completing}
+                  disabled={!!completing || (quest.subtasks && quest.subtasks.length > 0 && !quest.subtasks.every(st => st.completed))}
                   id={`quest-btn-${quest.id}`}
                 >
                   {isCompleting ? (

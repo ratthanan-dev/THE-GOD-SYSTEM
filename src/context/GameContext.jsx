@@ -286,12 +286,25 @@ function gameReducer(state, action) {
 
     case 'DAILY_RESET': {
       const newDailyQuests = generateDailyQuests();
-      const carryOverQuests = state.quests.filter(q => {
-        if (q.source !== 'user') return false;
-        if (q.completed) return false;
-        if (!q.deadline) return false;
-        return new Date(q.deadline) >= new Date();
-      });
+      const carryOverQuests = state.quests.map(q => {
+        if (q.source !== 'user') return null;
+        
+        // Handle Recurring Quests
+        if (q.recurrence === 'daily') {
+          return {
+            ...q,
+            completed: false, // reset completion
+            deadline: null,   // act like a daily quest (expires today)
+            subtasks: q.subtasks ? q.subtasks.map(st => ({ ...st, completed: false })) : []
+          };
+        }
+        
+        // Normal carry over rules
+        if (q.completed) return null;
+        if (!q.deadline) return null;
+        if (new Date(q.deadline) < new Date()) return null; // expired
+        return q;
+      }).filter(Boolean);
       
       const newQuests = [...newDailyQuests, ...carryOverQuests];
       const notification = {
@@ -407,6 +420,10 @@ function gameReducer(state, action) {
         type: 'user_custom',
         deadline: action.deadline || null,
         source: 'user',
+        priority: action.priority || 'low',
+        tags: action.tags || [],
+        subtasks: action.subtasks || [],
+        recurrence: action.recurrence || 'none',
       };
       return { ...state, quests: [...state.quests, newQuest] };
     }
@@ -414,9 +431,43 @@ function gameReducer(state, action) {
     case 'UPDATE_QUEST': {
       const updated = state.quests.map(q =>
         q.id === action.questId
-          ? { ...q, title: action.title, desc: action.desc }
+          ? { 
+              ...q, 
+              title: action.title, 
+              desc: action.desc,
+              priority: action.priority !== undefined ? action.priority : q.priority,
+              tags: action.tags !== undefined ? action.tags : q.tags,
+              subtasks: action.subtasks !== undefined ? action.subtasks : q.subtasks,
+              recurrence: action.recurrence !== undefined ? action.recurrence : q.recurrence,
+            }
           : q
       );
+      return { ...state, quests: updated };
+    }
+
+    case 'REORDER_QUESTS': {
+      const { sourceId, targetId } = action;
+      const quests = [...state.quests];
+      const sourceIdx = quests.findIndex(q => q.id === sourceId);
+      const targetIdx = quests.findIndex(q => q.id === targetId);
+      if (sourceIdx === -1 || targetIdx === -1) return state;
+      
+      const [moved] = quests.splice(sourceIdx, 1);
+      quests.splice(targetIdx, 0, moved);
+      return { ...state, quests };
+    }
+
+    case 'TOGGLE_SUBTASK': {
+      const { questId, subtaskId } = action;
+      const updated = state.quests.map(q => {
+        if (q.id === questId && q.subtasks) {
+          const newSubtasks = q.subtasks.map(st => 
+            st.id === subtaskId ? { ...st, completed: !st.completed } : st
+          );
+          return { ...q, subtasks: newSubtasks };
+        }
+        return q;
+      });
       return { ...state, quests: updated };
     }
 
