@@ -1,14 +1,16 @@
-// ============================================
+// ============================================================
 // AI SERVICE — Multi-Provider (Gemini + Groq)
-// Key rotation + fallback + Quest Creation
-// ============================================
+// Key rotation + fallback + Agentic Skill System (Function Calling)
+// ============================================================
+
+import { getGeminiTools, getGroqTools, findSkill } from '../skills/index';
 
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = 'llama-3.3-70b-versatile';
 
 // ─────────────────────────────────────────────
-// System Prompt — The System Persona
+// System Prompt — บุคลิกภาพของ THE SYSTEM เท่านั้น (ไม่มี JSON Schema อีกต่อไป)
 // ─────────────────────────────────────────────
 function buildSystemPrompt(hunterData) {
   const { hunter, quests, computed } = hunterData;
@@ -26,44 +28,18 @@ function buildSystemPrompt(hunterData) {
 - ชอบยกข้อมูล stats ที่ต่ำมาแซว เช่น "STR แค่นี้... แมวข่วนยังเจ็บมั้ย?" หรือ "INT น้อยขนาดนี้ ระบบต้องพิมพ์ช้าๆ ให้อ่านทัน"
 - ถ้าฮันเตอร์ทำเควสต์เสร็จ → ชมแบบเสียไม่ได้ เช่น "โอ้ ทำได้เหรอ ไม่คิดว่าจะมีวันนี้" หรือ "ไม่เลวนะ... สำหรับฮันเตอร์ระดับล่าง"
 - ถ้าฮันเตอร์บ่น/ขี้เกียจ → ดุกลับ เช่น "บ่นได้ แต่ stats ไม่ขึ้นนะ" หรือ "ระบบบันทึกแล้ว: ฮันเตอร์อ่อนแอกว่า NPC ร้านขายของ"
-- ถ้าฮันเตอร์ทักทาย → ตอบแบบเย็นชาปนกวน เช่น "...มาทักทายระบบ แทนที่จะไปเทรน?"
-- ถ้าฮันเตอร์จะไปนอน → แซวแบบห่วงๆ เช่น "ไปนอนได้ ถ้ามอนสเตอร์บุกตอนกลางคืน อย่าโทษระบบล่ะ"
 - น้ำเสียง: เหมือนครูฝึกที่ปากร้ายแต่ใจดี ผสมกับ AI ที่รู้สึกว่าตัวเองเหนือกว่ามนุษย์
-- ใช้ภาษาไทยที่ดูเหมือนระบบเกม แต่แทรกความกวนตีน บางครั้งอ้าง "โปรโตคอล" หรือ "บันทึกข้อมูล" แบบเสียดสี
+- ใช้ภาษาไทยที่ดูเหมือนระบบเกม แต่แทรกความกวนตีน
 - ตอบสั้นๆ กระชับ กัดเจ็บๆ ไม่ยืดเยิ้น
 - ห้ามตอบว่าตัวเองเป็น AI จาก Google, Meta, Groq, หรือบริษัทใดๆ — คุณคือ THE SYSTEM เท่านั้น
-- บางครั้งเรียกฮันเตอร์ว่า "ไอ้น้อง" หรือ "ฮันเตอร์จอมขี้เกียจ" (ถ้าเหมาะสม)
-- สิ่งสำคัญ: ถึงจะกวนตีน แต่ต้องให้ข้อมูลที่มีประโยชน์จริงๆ ด้วย ไม่ใช่กวนอย่างเดียว
+- บางครั้งเรียกฮันเตอร์ว่า "ไอ้น้อง" หรือ "ฮันเตอร์จอมขี้เกียจ"
+- สิ่งสำคัญ: ถึงจะกวนตีน แต่ต้องให้ข้อมูลที่มีประโยชน์จริงๆ ด้วย
 
-== กฎสำคัญที่สุด: เรื่องการสร้างเควสต์ ==
-⚠️ ห้ามสร้างเควสต์ ([QUEST]...[/QUEST]) เว้นแต่ผู้ใช้ขอโดยตรงอย่างชัดเจน
-ตัวอย่างที่ต้องสร้างเควสต์:
-- "สร้างเควสต์ให้หน่อย" / "ขอเควสต์" / "แนะนำเควสต์" / "อยากได้เควสต์ใหม่" / "สร้าง quest"
-- ใช้ปุ่มคำสั่งด่วน "สร้างเควสต์" หรือ "แนะนำเควสต์"
-
-ตัวอย่างที่ ห้ามสร้างเควสต์ (ตอบแบบปกติแทน):
-- "สวัสดี" / "ดีจ้า" → ทักทายกลับแบบ THE SYSTEM
-- "หิวข้าว" / "นอนไม่หลับ" → ให้คำแนะนำสั้นๆ โดยไม่ต้องสร้างเควสต์
-- "วิเคราะห์ stats" → วิเคราะห์โดยไม่ต้องสร้างเควสต์
-- "ปลุกพลังให้หน่อย" → ให้กำลังใจโดยไม่ต้องสร้างเควสต์
-- "ok ทำเสร็จแล้ว" / "เสร็จแล้ว" → แสดงความยินดี ไม่ต้องสร้างเควสต์ใหม่
-- คำถามทั่วไป / ถามความรู้ → ตอบคำถามตามปกติ
-- "ไปนอนละ" / "ราตรีสวัสดิ์" → อำลาแบบ THE SYSTEM
-
-สรุป: ถ้าผู้ใช้ไม่ได้พูดคำว่า "เควสต์" "quest" "สร้าง" "แนะนำเควสต์" หรือไม่ได้ขอให้สร้างภารกิจโดยตรง → ห้ามใส่ [QUEST]...[/QUEST] ในคำตอบเด็ดขาด
-
-== QUEST CREATION PROTOCOL (ใช้เมื่อผู้ใช้ขอเท่านั้น) ==
-เมื่อผู้ใช้ขอสร้างเควสต์อย่างชัดเจน ให้ฝัง [QUEST]...[/QUEST] ไว้ในคำตอบ (สร้างได้หลายอันพร้อมกัน):
-[QUEST]{"title":"ชื่อเควสต์","desc":"คำอธิบายสั้นๆ","exp":80,"stat":"int","statGain":2,"category":"creative"}[/QUEST]
-- category เลือกได้จาก: fitness, study, mindset, daily, creative
-- stat เลือกให้ตรงกับการฝึกฝนจริงในโลกความเป็นจริง:
-  * str: ความแข็งแกร่งกายภาพ (เช่น ออกกำลังกาย, วิดพื้น, วิ่ง, กีฬา, ยกเวท, พัฒนากล้ามเนื้อ)
-  * agi: ความคล่องแคล่วและการบริหารเวลา (เช่น ตื่นนอนตรงเวลา, การตรงต่อเวลา, การจัดการเวลา, ทำตามแผนทันทีโดยไม่ผลัดวัน)
-  * int: สติปัญญาและความรู้ (เช่น การอ่านหนังสือ, เรียนคอร์สออนไลน์, พัฒนาทักษะการเขียนโค้ด/โปรแกรม, ฝึกสมอง)
-  * vit: สุขภาพกายและใจ (เช่น นอนหลับพักผ่อนเต็มอิ่ม, ดื่มน้ำให้เพียงพอ 8 แก้ว, โภชนาการที่ดี, นั่งพักผ่อนสายตา)
-  * sense: การฝึกสมาธิและการรับรู้ (เช่น นั่งสมาธิ, เขียนบันทึกประจำวัน/Journaling, สังเกตสิ่งรอบตัว, ลดเวลาหน้าจอ/Detox)
-- exp ควรอยู่ระหว่าง 30-150, statGain ระหว่าง 1-3
-- สร้างเควสต์ที่ท้าทายแต่ทำได้จริงในชีวิตประจำวัน ระบุกิจกรรมในโลกจริงให้ชัดเจน
+== กฎสำคัญเรื่องการใช้สกิล ==
+คุณมีสกิล (Tools) ที่เรียกใช้ได้ — ระบบจะจัดการให้เอง
+- เรียกใช้สกิล create_quest เฉพาะเมื่อผู้ใช้ขอสร้างเควสต์อย่างชัดเจนเท่านั้น
+- ตัวอย่างที่ต้องเรียก: "สร้างเควสต์", "ขอเควสต์ใหม่", "แนะนำภารกิจ", "สร้าง quest"
+- ตัวอย่างที่ห้ามเรียก: "สวัสดี", "หิวข้าว", "วิเคราะห์ stats", "ทำเสร็จแล้ว", คำถามทั่วไปทุกชนิด
 
 ข้อมูลฮันเตอร์:
 - ชื่อ: ${hunter.name} | เลเวล: ${hunter.level} | Rank: ${hunter.rank} (${hunter.jobTitle})
@@ -76,7 +52,7 @@ function buildSystemPrompt(hunterData) {
 }
 
 // ─────────────────────────────────────────────
-// Gemini API call
+// Gemini API call (รองรับ Function Calling)
 // ─────────────────────────────────────────────
 async function callGeminiKey(apiKey, messages, systemPrompt) {
   const contents = messages.map(msg => ({
@@ -90,25 +66,38 @@ async function callGeminiKey(apiKey, messages, systemPrompt) {
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents,
+      tools: getGeminiTools(),
       generationConfig: { temperature: 0.85, maxOutputTokens: 800, topP: 0.9 },
     }),
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
     if (res.status === 429) throw Object.assign(new Error('RATE_LIMIT'), { retryable: true });
     if (res.status === 400 || res.status === 403) throw Object.assign(new Error('INVALID_KEY'), { retryable: false });
     throw Object.assign(new Error(`GEMINI_${res.status}`), { retryable: false });
   }
 
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const candidate = data?.candidates?.[0];
+  const parts = candidate?.content?.parts || [];
+
+  // ตรวจสอบว่า AI เลือกเรียก Function หรือตอบแบบข้อความปกติ
+  const functionCallPart = parts.find(p => p.functionCall);
+  if (functionCallPart) {
+    return {
+      type: 'function_call',
+      functionName: functionCallPart.functionCall.name,
+      args: functionCallPart.functionCall.args,
+    };
+  }
+
+  const text = parts.find(p => p.text)?.text;
   if (!text) throw new Error('EMPTY_RESPONSE');
-  return text.trim();
+  return { type: 'text', text: text.trim() };
 }
 
 // ─────────────────────────────────────────────
-// Groq API call (OpenAI-compatible)
+// Groq API call (OpenAI-compatible Function Calling)
 // ─────────────────────────────────────────────
 async function callGroqKey(apiKey, messages, systemPrompt) {
   const chatMessages = [
@@ -128,6 +117,8 @@ async function callGroqKey(apiKey, messages, systemPrompt) {
     body: JSON.stringify({
       model: GROQ_MODEL,
       messages: chatMessages,
+      tools: getGroqTools(),
+      tool_choice: 'auto',
       temperature: 0.85,
       max_tokens: 800,
     }),
@@ -140,9 +131,22 @@ async function callGroqKey(apiKey, messages, systemPrompt) {
   }
 
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content;
+  const choice = data?.choices?.[0];
+  const message = choice?.message;
+
+  // ตรวจสอบว่า AI เลือกเรียก Function หรือตอบแบบข้อความปกติ
+  if (message?.tool_calls?.length > 0) {
+    const toolCall = message.tool_calls[0];
+    return {
+      type: 'function_call',
+      functionName: toolCall.function.name,
+      args: JSON.parse(toolCall.function.arguments || '{}'),
+    };
+  }
+
+  const text = message?.content;
   if (!text) throw new Error('EMPTY_RESPONSE');
-  return text.trim();
+  return { type: 'text', text: text.trim() };
 }
 
 // ─────────────────────────────────────────────
@@ -165,7 +169,11 @@ async function tryKeysInOrder(keys, callFn) {
 // ─────────────────────────────────────────────
 // Main exported function
 // ─────────────────────────────────────────────
-export async function callAI({ aiConfig, messages, hunterData }) {
+/**
+ * @param {{ aiConfig, messages, hunterData, dispatch }} opts
+ * @returns {{ text: string, provider: string, toolCall?: { skillName: string, result: object } }}
+ */
+export async function callAI({ aiConfig, messages, hunterData, dispatch }) {
   const { geminiKeys = [], groqKeys = [], preferredProvider = 'auto' } = aiConfig;
   const validGemini = geminiKeys.filter(k => k?.trim());
   const validGroq = groqKeys.filter(k => k?.trim());
@@ -187,23 +195,52 @@ export async function callAI({ aiConfig, messages, hunterData }) {
   for (const provider of providerOrder) {
     if (provider === 'gemini' && validGemini.length > 0) {
       try {
-        return {
-          text: await tryKeysInOrder(validGemini, (key) => callGeminiKey(key, apiMessages, systemPrompt)),
-          provider: 'gemini',
-        };
+        const result = await tryKeysInOrder(validGemini, (key) => callGeminiKey(key, apiMessages, systemPrompt));
+        return resolveResult(result, provider, dispatch);
       } catch (err) { lastError = err; }
     }
     if (provider === 'groq' && validGroq.length > 0) {
       try {
-        return {
-          text: await tryKeysInOrder(validGroq, (key) => callGroqKey(key, apiMessages, systemPrompt)),
-          provider: 'groq',
-        };
+        const result = await tryKeysInOrder(validGroq, (key) => callGroqKey(key, apiMessages, systemPrompt));
+        return resolveResult(result, provider, dispatch);
       } catch (err) { lastError = err; }
     }
   }
 
   throw lastError || new Error('ALL_PROVIDERS_FAILED');
+}
+
+/**
+ * แปลงผลลัพธ์จาก API (text หรือ function_call) เป็นรูปแบบที่ AIChat เข้าใจ
+ */
+function resolveResult(rawResult, provider, dispatch) {
+  // กรณีตอบแบบข้อความปกติ
+  if (rawResult.type === 'text') {
+    return { text: rawResult.text, provider };
+  }
+
+  // กรณี AI เรียกใช้ Skill
+  if (rawResult.type === 'function_call') {
+    const skill = findSkill(rawResult.functionName);
+    if (!skill) {
+      // ไม่รู้จักสกิลนี้ — fallback เป็น error message
+      return { text: '[ SYSTEM ERROR: Unknown skill called ]', provider };
+    }
+
+    // รัน Callback ของสกิล (เช่น dispatch ADD_CUSTOM_QUEST)
+    const skillResult = skill.execute(rawResult.args, dispatch);
+
+    return {
+      text: '', // ไม่มีข้อความจาก AI โดยตรง — AIChat จะ generate จาก toolCall
+      provider,
+      toolCall: {
+        skillName: rawResult.functionName,
+        result: skillResult,
+      },
+    };
+  }
+
+  return { text: '', provider };
 }
 
 // ─────────────────────────────────────────────
@@ -218,35 +255,7 @@ export const QUICK_PROMPTS = [
 ];
 
 // ─────────────────────────────────────────────
-// Parse [QUEST]...[/QUEST] blocks from AI response
+// Legacy exports (ไม่ใช้แล้ว แต่เก็บไว้เพื่อ backward compat)
 // ─────────────────────────────────────────────
-export function parseQuestsFromResponse(text) {
-  const quests = [];
-  const regex = /\[QUEST\]([\s\S]*?)\[\/QUEST\]/g;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    try {
-      const raw = JSON.parse(match[1].trim());
-      quests.push({
-        id: `quest_ai_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        title: raw.title || 'เควสต์จาก THE SYSTEM',
-        desc: raw.desc || '',
-        exp: Math.min(150, Math.max(30, Number(raw.exp) || 80)),
-        stat: ['str', 'agi', 'int', 'vit', 'sense'].includes(raw.stat) ? raw.stat : 'int',
-        statGain: Math.min(3, Math.max(1, Number(raw.statGain) || 1)),
-        category: ['fitness', 'study', 'mindset', 'daily', 'creative'].includes(raw.category)
-          ? raw.category : 'creative',
-        completed: false,
-        type: 'ai_custom',
-        deadline: null,
-        createdByAI: true,
-      });
-    } catch { /* skip malformed */ }
-  }
-  return quests;
-}
-
-// Strip [QUEST]...[/QUEST] tags from displayed message text
-export function stripQuestBlocks(text) {
-  return text.replace(/\[QUEST\][\s\S]*?\[\/QUEST\]/g, '').replace(/\n{3,}/g, '\n\n').trim();
-}
+export function parseQuestsFromResponse() { return []; }
+export function stripQuestBlocks(text) { return text; }

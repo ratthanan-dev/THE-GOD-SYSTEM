@@ -27,6 +27,9 @@ function MessageBubble({ msg }) {
         {isSystem && (
           <div className="system-sender-row">
             <span className="text-mono system-sender">THE SYSTEM</span>
+            {msg.isSkillResult && (
+              <span className="skill-badge text-mono">⚙ SKILL</span>
+            )}
             {provider && (
               <span className="provider-badge text-mono" style={{ color: provider.color }}>
                 {provider.icon} {provider.label}
@@ -35,7 +38,7 @@ function MessageBubble({ msg }) {
           </div>
         )}
         <div className="message-text">{msg.content}</div>
-        
+
         {msg.quests && msg.quests.length > 0 && (
           <div className="ai-quest-cards">
             {msg.quests.map((q, idx) => (
@@ -43,11 +46,24 @@ function MessageBubble({ msg }) {
                 <div className="ai-quest-card-header">
                   <span className="ai-quest-icon">📜</span>
                   <span className="ai-quest-title">{q.title}</span>
+                  {q.priority && q.priority !== 'low' && (
+                    <span className="ai-quest-priority" data-priority={q.priority}>
+                      {q.priority === 'high' ? '🔴' : '🟡'}
+                    </span>
+                  )}
                 </div>
                 {q.desc && <div className="ai-quest-desc">{q.desc}</div>}
+                {q.subtasks && q.subtasks.length > 0 && (
+                  <div className="ai-quest-subtasks text-mono">
+                    {q.subtasks.map((st, si) => (
+                      <div key={si} className="ai-subtask-item">▸ {st.title}</div>
+                    ))}
+                  </div>
+                )}
                 <div className="ai-quest-rewards text-mono">
                   <span className="reward-exp">+{q.exp} EXP</span>
                   <span className="reward-stat">+{q.statGain} {q.stat.toUpperCase()}</span>
+                  {q.recurrence === 'daily' && <span className="ai-quest-recur">🔁 daily</span>}
                 </div>
               </div>
             ))}
@@ -62,6 +78,7 @@ function MessageBubble({ msg }) {
     </div>
   );
 }
+
 
 // ─────────────────────────────────────────────
 // No Config State
@@ -162,24 +179,42 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       : [{ role: 'user', content: text.trim() }];
 
     try {
+      // ส่ง dispatch เข้าไปด้วย เพื่อให้ Skill execute() สามารถ dispatch action ได้โดยตรง
       const result = await callAI({
         aiConfig: config,
         messages: apiMessages,
         hunterData: { hunter, quests, computed },
+        dispatch,
       });
-      
-      const newQuests = parseQuestsFromResponse(result.text);
-      newQuests.forEach(q => dispatch({ type: 'ADD_CUSTOM_QUEST', quest: q }));
-      
+
       setActiveProvider(result.provider);
-      const systemMsg = {
-        id: Date.now() + 1,
-        role: 'model',
-        content: stripQuestBlocks(result.text),
-        provider: result.provider,
-        timestamp: Date.now(),
-        quests: newQuests,
-      };
+
+      let systemMsg;
+      if (result.toolCall) {
+        // ── กรณี AI เรียกใช้ Skill (Function Call) ──
+        const { skillName, result: skillResult } = result.toolCall;
+        const createdQuests = skillResult?.quests || [];
+        systemMsg = {
+          id: Date.now() + 1,
+          role: 'model',
+          content: `[ SKILL ACTIVATED: ${skillName.toUpperCase()} ]`,
+          provider: result.provider,
+          timestamp: Date.now(),
+          quests: createdQuests,
+          isSkillResult: true,
+        };
+      } else {
+        // ── กรณีตอบแบบข้อความปกติ ──
+        systemMsg = {
+          id: Date.now() + 1,
+          role: 'model',
+          content: result.text,
+          provider: result.provider,
+          timestamp: Date.now(),
+          quests: [],
+        };
+      }
+
       dispatch({ type: 'ADD_AI_MESSAGE', message: systemMsg });
     } catch (err) {
       const errorMessages = {
@@ -194,6 +229,7 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       setIsLoading(false);
     }
   };
+
 
   const handleSubmit = (e) => { e.preventDefault(); sendMessage(input); };
   const handleQuickAction = (prompt) => { sendMessage(prompt); if (navigator.vibrate) navigator.vibrate(30); };

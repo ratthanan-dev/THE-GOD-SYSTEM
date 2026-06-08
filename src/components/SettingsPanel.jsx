@@ -8,6 +8,7 @@ import './SettingsPanel.css';
 function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) {
   const [input, setInput] = useState('');
   const [showInputs, setShowInputs] = useState({});
+  const [testStatuses, setTestStatuses] = useState({}); // { [keyIndex]: 'success' | 'invalid' | 'ratelimit' | 'loading' | 'error' }
 
   const toggleShow = (i) => setShowInputs(p => ({ ...p, [i]: !p[i] }));
 
@@ -24,6 +25,59 @@ function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) 
     setInput('');
   };
 
+  const handleTestKey = async (key, index) => {
+    setTestStatuses(p => ({ ...p, [index]: 'loading' }));
+    try {
+      if (provider === 'gemini') {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'say ok' }] }]
+          })
+        });
+        if (res.ok) {
+          setTestStatuses(p => ({ ...p, [index]: 'success' }));
+        } else {
+          if (res.status === 429) {
+            setTestStatuses(p => ({ ...p, [index]: 'ratelimit' }));
+          } else if (res.status === 400 || res.status === 403) {
+            setTestStatuses(p => ({ ...p, [index]: 'invalid' }));
+          } else {
+            setTestStatuses(p => ({ ...p, [index]: 'error' }));
+          }
+        }
+      } else {
+        // Groq
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [{ role: 'user', content: 'say ok' }],
+            max_tokens: 3
+          })
+        });
+        if (res.ok) {
+          setTestStatuses(p => ({ ...p, [index]: 'success' }));
+        } else {
+          if (res.status === 429) {
+            setTestStatuses(p => ({ ...p, [index]: 'ratelimit' }));
+          } else if (res.status === 401) {
+            setTestStatuses(p => ({ ...p, [index]: 'invalid' }));
+          } else {
+            setTestStatuses(p => ({ ...p, [index]: 'error' }));
+          }
+        }
+      }
+    } catch (err) {
+      setTestStatuses(p => ({ ...p, [index]: 'error' }));
+    }
+  };
+
   return (
     <div className="key-list-section">
       {/* Existing keys */}
@@ -35,6 +89,27 @@ function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) 
               <span className="key-value text-mono">
                 {showInputs[i] ? k : maskKey(k)}
               </span>
+              
+              {/* Test Status Info */}
+              {testStatuses[i] && (
+                <span className={`key-test-status text-mono ${testStatuses[i]}`}>
+                  {testStatuses[i] === 'loading' && '⏳ กำลังทดสอบ...'}
+                  {testStatuses[i] === 'success' && '🟢 ใช้งานได้'}
+                  {testStatuses[i] === 'invalid' && '🔴 คีย์ไม่ถูกต้อง'}
+                  {testStatuses[i] === 'ratelimit' && '🟡 Rate Limit'}
+                  {testStatuses[i] === 'error' && '🔴 ล้มเหลว'}
+                </span>
+              )}
+
+              <button
+                className="key-test-btn text-mono"
+                onClick={() => handleTestKey(k, i)}
+                disabled={testStatuses[i] === 'loading'}
+                title="ทดสอบการใช้งานคีย์นี้"
+              >
+                🧪 ทดสอบ
+              </button>
+
               <button className="key-toggle-btn" onClick={() => toggleShow(i)} title="แสดง/ซ่อน">
                 {showInputs[i] ? '🙈' : '👁️'}
               </button>
