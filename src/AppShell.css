@@ -148,13 +148,18 @@
   animation: float-in 0.3s ease;
 }
 
-/* AI panel — flex column, no extra scroll */
-.ai-tab-panel.active {
+/* Mobile: AI panel is hidden unless active tab */
+.ai-sidebar {
+  display: none;
+}
+
+.ai-sidebar.active {
   display: flex;
   flex-direction: column;
   height: calc(100dvh - 56px - 64px - 16px);
   overflow: hidden;
   padding: 0;
+  animation: float-in 0.3s ease;
 }
 
 /* ============================================
@@ -234,10 +239,96 @@
   display: none;
 }
 
-/* Desktop: show side gutter */
+/* Desktop: show side gutter for mid-sized tablets */
 @media (min-width: 520px) {
   .app-shell {
     border-left: 1px solid var(--border-dim);
     border-right: 1px solid var(--border-dim);
   }
 }
+
+/* ============================================
+   DESKTOP COMMAND DASHBOARD (min-width: 1024px)
+   ============================================ */
+@media (min-width: 1024px) {
+  .app-shell {
+    max-width: 1440px;
+    height: 96vh;
+    margin: 2vh auto;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border-panel);
+    display: grid;
+    grid-template-columns: 80px 1fr 400px;
+    grid-template-rows: 80px 1fr;
+    grid-template-areas: 
+      "header header header"
+      "sidebar main ai";
+    overflow: hidden;
+    background: var(--bg-void);
+  }
+
+  /* Header adjustments */
+  .system-header {
+    grid-area: header;
+    position: relative; /* Remove sticky */
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  }
+
+  /* Main content area */
+  .app-content {
+    grid-area: main;
+    padding-bottom: 0; /* Remove bottom nav padding */
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md);
+  }
+
+  .tab-panel {
+    height: 100%;
+  }
+
+  /* Side Navigation */
+  .bottom-nav {
+    grid-area: sidebar;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform: none;
+    left: 0;
+    flex-direction: column;
+    padding: var(--space-md) 0;
+    border-top: none;
+    border-right: 1px solid var(--border-panel);
+    background: rgba(0, 5, 16, 0.4); /* Make it slightly transparent to fit desktop */
+    box-shadow: none;
+  }
+
+  .nav-inner {
+    flex-direction: column;
+    height: 100%;
+    justify-content: flex-start;
+    gap: var(--space-md);
+  }
+
+  .nav-tab {
+    flex: none;
+    min-height: 64px;
+    margin: 0 var(--space-sm);
+  }
+  
+  .nav-tab.mobile-only {
+    display: none; /* Hide AI button from navigation */
+  }
+
+  /* AI Sidebar Fixed */
+  .ai-sidebar {
+    display: flex !important; /* Force show */
+    grid-area: ai;
+    height: 100%;
+    border-left: 1px solid var(--border-panel);
+    background: rgba(0, 5, 15, 0.5);
+    flex-direction: column;
+  }
+}
+

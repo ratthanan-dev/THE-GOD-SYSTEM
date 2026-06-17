@@ -10,8 +10,8 @@ import './AppShell.css';
 const TABS = [
   { id: 'status', label: 'สถานะ', icon: 'person', shortLabel: 'STATUS' },
   { id: 'quests', label: 'เควสต์', icon: 'assignment', shortLabel: 'QUESTS' },
-  { id: 'ai', label: 'The System', icon: 'psychology', shortLabel: 'SYSTEM' },
   { id: 'settings', label: 'ตั้งค่า', icon: 'settings', shortLabel: 'SETTINGS' },
+  { id: 'ai', label: 'The System', icon: 'psychology', shortLabel: 'SYSTEM', mobileOnly: true },
 ];
 
 export default function AppShell() {
@@ -74,13 +74,15 @@ export default function AppShell() {
         <div className={`tab-panel ${activeTab === 'quests' ? 'active' : ''}`}>
           <QuestLog />
         </div>
-        <div className={`tab-panel ai-tab-panel ${activeTab === 'ai' ? 'active' : ''}`}>
-          <AIChat />
-        </div>
         <div className={`tab-panel ${activeTab === 'settings' ? 'active' : ''}`}>
           <SettingsPanel />
         </div>
       </main>
+
+      {/* AI Sidebar / Tab (Always visible on Desktop, behaves like a tab on Mobile) */}
+      <aside className={`ai-sidebar ${activeTab === 'ai' ? 'active' : ''}`}>
+        <AIChat />
+      </aside>
 
       {/* Bottom Navigation */}
       <nav className="bottom-nav">
@@ -88,7 +90,7 @@ export default function AppShell() {
           {TABS.map(tab => (
             <button
               key={tab.id}
-              className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+              className={`nav-tab ${activeTab === tab.id ? 'active' : ''} ${tab.mobileOnly ? 'mobile-only' : ''}`}
               onClick={() => handleTabChange(tab.id)}
               id={`nav-${tab.id}`}
               aria-label={tab.label}
