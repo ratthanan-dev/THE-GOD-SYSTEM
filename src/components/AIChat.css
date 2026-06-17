@@ -472,12 +472,188 @@
 }
 
 /* ── Quest Recurrence Badge ── */
+/* ── Recurrence Badge ── */
 .ai-quest-recur {
   color: var(--text-muted);
   font-size: 0.55rem;
   letter-spacing: 0.05em;
 }
 
+/* ======================================================
+   SKILL RESULT CARDS
+   ====================================================== */
+
+/* ── Stat Analysis Report ── */
+.ai-stat-report {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.ai-report-summary {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ai-report-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-report-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-report-section-title {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.ai-report-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+}
+
+.ai-report-strong {
+  background: rgba(0, 255, 136, 0.06);
+  border-left: 2px solid rgba(0, 255, 136, 0.4);
+}
+
+.ai-report-weak {
+  background: rgba(255, 45, 85, 0.06);
+  border-left: 2px solid rgba(255, 45, 85, 0.3);
+}
+
+.ai-report-note {
+  font-size: 0.63rem;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
+.ai-report-recs {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 8px;
+}
+
+.ai-rec-item {
+  font-size: 0.65rem;
+  color: var(--neon-primary);
+  line-height: 1.4;
+}
+
+.ai-rank-progress {
+  font-size: 0.63rem;
+  color: var(--accent-gold);
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.4);
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+/* ── Penalty Card ── */
+.ai-penalty-card {
+  margin-top: 10px;
+  background: rgba(255, 45, 85, 0.08);
+  border: 1px solid rgba(255, 45, 85, 0.35);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: penalty-flash 0.5s ease;
+}
+
+@keyframes penalty-flash {
+  0%   { background: rgba(255, 45, 85, 0.25); }
+  100% { background: rgba(255, 45, 85, 0.08); }
+}
+
+.ai-penalty-header {
+  font-size: 0.7rem;
+  color: var(--accent-red);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px rgba(255, 45, 85, 0.5);
+}
+
+.ai-penalty-reason {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.ai-penalty-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.ai-penalty-exp {
+  font-size: 0.7rem;
+  color: var(--accent-red);
+  font-weight: bold;
+}
+
+.ai-penalty-hp {
+  font-size: 0.7rem;
+  color: #ff6060;
+  font-weight: bold;
+}
+
+/* ── Restore HP Card ── */
+.ai-restore-card {
+  margin-top: 10px;
+  background: rgba(0, 255, 136, 0.06);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: restore-glow 0.5s ease;
+}
+
+@keyframes restore-glow {
+  0%   { box-shadow: 0 0 20px rgba(0, 255, 136, 0.3); }
+  100% { box-shadow: none; }
+}
+
+.ai-restore-header {
+  font-size: 0.7rem;
+  color: var(--accent-green);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+}
+
+.ai-restore-reason {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.ai-restore-amount {
+  font-size: 0.75rem;
+  color: var(--accent-green);
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(0, 255, 136, 0.4);
+}
 
 .message-text {
   font-size: 0.85rem;

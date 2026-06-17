@@ -12,9 +12,12 @@ const PROVIDER_LABELS = {
 // ─────────────────────────────────────────────
 // Message Bubble
 // ─────────────────────────────────────────────
+const STAT_ICON = { str: '⚔️', agi: '⚡', int: '📖', vit: '🛡️', sense: '👁️' };
+
 function MessageBubble({ msg }) {
   const isSystem = msg.role === 'model';
   const provider = msg.provider ? PROVIDER_LABELS[msg.provider] : null;
+  const tc = msg.toolCall;
 
   return (
     <div className={`ai-message ${isSystem ? 'system-msg' : 'user-msg'}`}>
@@ -39,6 +42,7 @@ function MessageBubble({ msg }) {
         )}
         <div className="message-text">{msg.content}</div>
 
+        {/* ── Quest Cards (create_quest) ── */}
         {msg.quests && msg.quests.length > 0 && (
           <div className="ai-quest-cards">
             {msg.quests.map((q, idx) => (
@@ -62,12 +66,80 @@ function MessageBubble({ msg }) {
                 )}
                 <div className="ai-quest-rewards text-mono">
                   <span className="reward-exp">+{q.exp} EXP</span>
-                  <span className="reward-stat">+{q.statGain} {q.stat.toUpperCase()}</span>
+                  <span className="reward-stat">+{q.statGain} {q.stat?.toUpperCase()}</span>
                   {q.recurrence === 'daily' && <span className="ai-quest-recur">🔁 daily</span>}
                 </div>
               </div>
             ))}
             <div className="ai-quest-added-notice text-mono">✓ เพิ่มลงใน Quest Log แล้ว</div>
+          </div>
+        )}
+
+        {/* ── Stat Analysis Card (analyze_stats) ── */}
+        {tc?.skillName === 'analyze_stats' && tc.result?.report && (() => {
+          const r = tc.result.report;
+          return (
+            <div className="ai-stat-report">
+              {r.summary && <div className="ai-report-summary text-mono">{r.summary}</div>}
+              <div className="ai-report-grid">
+                {r.strengths?.length > 0 && (
+                  <div className="ai-report-section">
+                    <div className="ai-report-section-title text-mono">▲ จุดแข็ง</div>
+                    {r.strengths.map((s, i) => (
+                      <div key={i} className="ai-report-item ai-report-strong">
+                        <span>{STAT_ICON[s.stat] || '⬆️'}</span>
+                        <span className="text-mono">{s.label}</span>
+                        <span className="ai-report-note">{s.note}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {r.weaknesses?.length > 0 && (
+                  <div className="ai-report-section">
+                    <div className="ai-report-section-title text-mono">▼ จุดอ่อน</div>
+                    {r.weaknesses.map((w, i) => (
+                      <div key={i} className="ai-report-item ai-report-weak">
+                        <span>{STAT_ICON[w.stat] || '⬇️'}</span>
+                        <span className="text-mono">{w.label}</span>
+                        <span className="ai-report-note">{w.note}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {r.recommendations?.length > 0 && (
+                <div className="ai-report-recs">
+                  <div className="ai-report-section-title text-mono">▸ คำแนะนำ</div>
+                  {r.recommendations.map((rec, i) => (
+                    <div key={i} className="ai-rec-item text-mono">◆ {rec}</div>
+                  ))}
+                </div>
+              )}
+              {r.rank_progress && (
+                <div className="ai-rank-progress text-mono">{r.rank_progress}</div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* ── Penalty Card (apply_penalty) ── */}
+        {tc?.skillName === 'apply_penalty' && tc.result && (
+          <div className="ai-penalty-card text-mono">
+            <div className="ai-penalty-header">⚠️ [ {tc.result.crime} ]</div>
+            <div className="ai-penalty-reason">{tc.result.reason}</div>
+            <div className="ai-penalty-stats">
+              <span className="ai-penalty-exp">-{tc.result.expPenalty} EXP</span>
+              <span className="ai-penalty-hp">-{tc.result.hpPenalty} HP</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── Restore HP Card (restore_hp) ── */}
+        {tc?.skillName === 'restore_hp' && tc.result && (
+          <div className="ai-restore-card text-mono">
+            <div className="ai-restore-header">❖ [ {tc.result.activity} ]</div>
+            <div className="ai-restore-reason">{tc.result.reason}</div>
+            <div className="ai-restore-amount">+{tc.result.amount} HP ฟื้นคืนแล้ว</div>
           </div>
         )}
 
@@ -202,6 +274,7 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
           timestamp: Date.now(),
           quests: createdQuests,
           isSkillResult: true,
+          toolCall: result.toolCall,   // เก็บ toolCall ไว้เพื่อให้ MessageBubble แสดงผล
         };
       } else {
         // ── กรณีตอบแบบข้อความปกติ ──

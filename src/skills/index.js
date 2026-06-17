@@ -4,13 +4,16 @@
 // ============================================================
 
 import { createQuestSkill } from './createQuestSkill';
+import { analyzeStatsSkill } from './analyzeStatsSkill';
+import { applyPenaltySkill } from './applyPenaltySkill';
+import { restoreHpSkill } from './restoreHpSkill';
 
 /** รายการสกิลทั้งหมดที่ THE SYSTEM มีอยู่ */
 export const ALL_SKILLS = [
   createQuestSkill,
-  // ── เพิ่มสกิลใหม่ตรงนี้ในอนาคต ──
-  // analyzeStatSkill,
-  // applyPunishmentSkill,
+  analyzeStatsSkill,
+  applyPenaltySkill,
+  restoreHpSkill,
 ];
 
 /**
