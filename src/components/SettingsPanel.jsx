@@ -5,7 +5,7 @@ import './SettingsPanel.css';
 // ─────────────────────────────────────────────
 // Key List Sub-component
 // ─────────────────────────────────────────────
-function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) {
+function KeyList({ provider, keys, onAddMultiple, onRemove, placeholder, accentColor }) {
   const [input, setInput] = useState('');
   const [showInputs, setShowInputs] = useState({});
   const [testStatuses, setTestStatuses] = useState({}); // { [keyIndex]: 'success' | 'invalid' | 'ratelimit' | 'loading' | 'error' }
@@ -20,8 +20,11 @@ function KeyList({ provider, keys, onAdd, onRemove, placeholder, accentColor }) 
 
   const handleAdd = () => {
     const trimmed = input.trim();
-    if (!trimmed || keys.includes(trimmed)) return;
-    onAdd(trimmed);
+    if (!trimmed) return;
+    const newKeys = trimmed.split(',').map(k => k.trim()).filter(k => k && !keys.includes(k));
+    if (newKeys.length > 0) {
+      onAddMultiple(newKeys);
+    }
     setInput('');
   };
 
@@ -162,8 +165,9 @@ export default function SettingsPanel() {
     dispatch({ type: 'SET_AI_CONFIG', config: { ...config, ...patch } });
   };
 
-  const addKey = (provider, key) => {
-    const arr = provider === 'gemini' ? [...geminiKeys, key] : [...groqKeys, key];
+  const addKeys = (provider, keysToAdd) => {
+    const current = provider === 'gemini' ? geminiKeys : groqKeys;
+    const arr = Array.from(new Set([...current, ...keysToAdd]));
     updateConfig(provider === 'gemini' ? { geminiKeys: arr } : { groqKeys: arr });
   };
 
@@ -311,7 +315,7 @@ export default function SettingsPanel() {
           <KeyList
             provider="gemini"
             keys={geminiKeys}
-            onAdd={(k) => addKey('gemini', k)}
+            onAddMultiple={(keys) => addKeys('gemini', keys)}
             onRemove={(i) => removeKey('gemini', i)}
             placeholder="AIzaSy..."
             accentColor="#4285f4"
@@ -327,7 +331,7 @@ export default function SettingsPanel() {
           <KeyList
             provider="groq"
             keys={groqKeys}
-            onAdd={(k) => addKey('groq', k)}
+            onAddMultiple={(keys) => addKeys('groq', keys)}
             onRemove={(i) => removeKey('groq', i)}
             placeholder="gsk_..."
             accentColor="#f55036"
