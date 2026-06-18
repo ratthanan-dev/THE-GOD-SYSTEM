@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useGame, getGameDay } from '../context/GameContext';
+import { getAllMemories, deleteMemory, clearAllMemories, getMemoryStats } from '../services/memoryService';
 import './SettingsPanel.css';
 
 // ─────────────────────────────────────────────
@@ -396,6 +397,79 @@ export default function SettingsPanel() {
           </div>
         </div>
         <div className="last-login text-mono">เข้าสู่ระบบล่าสุด: {state.lastLoginDate || '—'}</div>
+      </div>
+
+      {/* Memory Management */}
+      <div className="settings-section glass-panel">
+        <div className="settings-title text-display">🧠 ความทรงจำของ THE SYSTEM</div>
+        <div className="settings-subtitle text-secondary">
+          ข้อมูลที่ THE SYSTEM จำได้จากบทสนทนาก่อนหน้า — ใช้อ้างอิงเมื่อเปิดแชทใหม่
+        </div>
+
+        {(() => {
+          const memories = getAllMemories();
+          const stats = getMemoryStats();
+          const categoryLabels = {
+            personal: '👤 ส่วนตัว',
+            goal: '🎯 เป้าหมาย',
+            habit: '🔄 นิสัย',
+            preference: '💜 ชอบ',
+            concern: '⚠️ กังวล',
+            achievement: '🏆 สำเร็จ',
+          };
+
+          return (
+            <>
+              <div className="memory-stats text-mono" style={{ display: 'flex', gap: '1rem', marginBottom: '0.75rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                <span>ความทรงจำ: <span style={{ color: 'var(--neon-primary)' }}>{stats.totalFacts}</span></span>
+                <span>สกัดแล้ว: <span style={{ color: 'var(--neon-primary)' }}>{stats.totalExtractions}</span> ครั้ง</span>
+              </div>
+
+              {memories.length === 0 ? (
+                <div className="text-mono" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
+                  ยังไม่มีความทรงจำ — คุยกับ THE SYSTEM สักพัก ระบบจะจำเอง
+                </div>
+              ) : (
+                <div className="memory-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+                  {memories.map(mem => (
+                    <div key={mem.id} className="memory-item glass-panel-light" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-sm)' }}>
+                      <span className="text-mono" style={{ fontSize: '0.65rem', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+                        {categoryLabels[mem.category] || '📝'}
+                      </span>
+                      <span className="text-mono" style={{ fontSize: '0.72rem', color: 'var(--text-primary)', flex: 1 }}>
+                        {mem.content}
+                      </span>
+                      <button
+                        className="btn" 
+                        style={{ padding: '2px 6px', fontSize: '0.65rem', minWidth: 'auto', background: 'transparent', border: '1px solid rgba(255,45,85,0.3)', color: 'var(--accent-red)' }}
+                        onClick={() => { deleteMemory(mem.id); dispatch({ type: 'SET_TAB', tab: 'settings' }); }}
+                        title="ลบความทรงจำนี้"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {memories.length > 0 && (
+                <button 
+                  className="btn btn-danger w-full" 
+                  style={{ marginTop: '0.75rem', fontSize: '0.75rem' }}
+                  onClick={() => {
+                    if (confirm('ล้างความทรงจำทั้งหมดของ THE SYSTEM?\nTHE SYSTEM จะลืมทุกอย่างที่เคยรู้เกี่ยวกับคุณ')) {
+                      clearAllMemories();
+                      dispatch({ type: 'SET_TAB', tab: 'settings' });
+                    }
+                  }}
+                  id="clear-memories-btn"
+                >
+                  🧹 ล้างความทรงจำทั้งหมด
+                </button>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Danger Zone */}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { callAI, QUICK_PROMPTS, parseQuestsFromResponse, stripQuestBlocks } from '../services/aiService';
+import { buildMemoryContext, extractMemories } from '../services/memoryService';
 import ChatHistorySidebar from './ChatHistorySidebar';
 import './AIChat.css';
 
@@ -251,12 +252,16 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       : [{ role: 'user', content: text.trim() }];
 
     try {
+      // ดึง Memory Context แปะใน System Prompt
+      const memoryContext = buildMemoryContext();
+
       // ส่ง dispatch เข้าไปด้วย เพื่อให้ Skill execute() สามารถ dispatch action ได้โดยตรง
       const result = await callAI({
         aiConfig: config,
         messages: apiMessages,
         hunterData: { hunter, quests, computed },
         dispatch,
+        memoryContext,
       });
 
       setActiveProvider(result.provider);
@@ -289,6 +294,10 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       }
 
       dispatch({ type: 'ADD_AI_MESSAGE', message: systemMsg });
+
+      // สกัดความทรงจำเบื้องหลัง (ไม่บล็อค UI)
+      const allMsgs = [...aiMessages, userMsg, systemMsg];
+      extractMemories(allMsgs, config, activeChatSessionId).catch(() => {});
     } catch (err) {
       const errorMessages = {
         NO_API_KEY: 'ไม่พบ API Key — ตั้งค่าใน Settings',

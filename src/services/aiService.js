@@ -12,7 +12,7 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 // ─────────────────────────────────────────────
 // System Prompt — บุคลิกภาพของ THE SYSTEM เท่านั้น (ไม่มี JSON Schema อีกต่อไป)
 // ─────────────────────────────────────────────
-function buildSystemPrompt(hunterData) {
+function buildSystemPrompt(hunterData, memoryContext = '') {
   const { hunter, quests, computed } = hunterData;
   const completedQuests = quests.filter(q => q.completed);
   const pendingQuests = quests.filter(q => !q.completed);
@@ -60,7 +60,7 @@ function buildSystemPrompt(hunterData) {
 - Stats: STR ${hunter.stats.str} | AGI ${hunter.stats.agi} | INT ${hunter.stats.int} | VIT ${hunter.stats.vit} | SENSE ${hunter.stats.sense} | Total: ${totalStats}
 - จุดแข็ง: ${strongStats.join(', ')} | จุดอ่อน: ${weakStats.join(', ')}
 - เควสต์สำเร็จวันนี้: ${completedQuests.length} ข้อ (${completedQuests.map(q => q.title).join(', ') || 'ยังไม่มี'})
-- เควสต์ที่เหลือ: ${pendingQuests.length} ข้อ (${pendingQuests.map(q => q.title).join(', ') || 'ทำครบแล้ว!'})`;
+- เควสต์ที่เหลือ: ${pendingQuests.length} ข้อ (${pendingQuests.map(q => q.title).join(', ') || 'ทำครบแล้ว!'})${memoryContext}`;
 }
 
 // ─────────────────────────────────────────────
@@ -189,14 +189,14 @@ async function tryKeysInOrder(keys, callFn) {
  * @param {{ aiConfig, messages, hunterData, dispatch }} opts
  * @returns {{ text: string, provider: string, toolCall?: { skillName: string, result: object } }}
  */
-export async function callAI({ aiConfig, messages, hunterData, dispatch }) {
+export async function callAI({ aiConfig, messages, hunterData, dispatch, memoryContext = '' }) {
   const { geminiKeys = [], groqKeys = [], preferredProvider = 'auto' } = aiConfig;
   const validGemini = geminiKeys.filter(k => k?.trim());
   const validGroq = groqKeys.filter(k => k?.trim());
 
   if (validGemini.length === 0 && validGroq.length === 0) throw new Error('NO_API_KEY');
 
-  const systemPrompt = buildSystemPrompt(hunterData);
+  const systemPrompt = buildSystemPrompt(hunterData, memoryContext);
   const apiMessages = messages
     .filter(m => !m.content.startsWith('[ SYSTEM BOOT'))
     .map(m => ({ role: m.role, content: m.content }));
