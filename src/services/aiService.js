@@ -137,9 +137,13 @@ async function callGroqKey(apiKey, messages, systemPrompt) {
   });
 
   if (!res.ok) {
+    let errBody = {};
+    try { errBody = await res.json(); } catch(e){}
+    const errMsg = errBody.error?.message || errBody.message || `GROQ_${res.status}`;
+    console.error("GROQ API ERROR:", errBody);
     if (res.status === 429) throw Object.assign(new Error('RATE_LIMIT'), { retryable: true });
     if (res.status === 401) throw Object.assign(new Error('INVALID_KEY'), { retryable: false });
-    throw Object.assign(new Error(`GROQ_${res.status}`), { retryable: false });
+    throw Object.assign(new Error(errMsg), { retryable: false });
   }
 
   const data = await res.json();
