@@ -223,7 +223,7 @@ function gameReducer(state, action) {
         chatSessions: state.chatSessions,    // preserve chat sessions
         activeChatSessionId: state.activeChatSessionId, // preserve active session
         aiConfig: state.aiConfig,            // always keep local AI config
-        activeTab: payload.activeTab || state.activeTab || 'status',
+        activeTab: 'status', // เริ่มต้นที่หน้า Status เสมอเมื่อเปิดแอปใหม่
         settings: {
           ...state.settings,
           ...(payload.settings || {}),
