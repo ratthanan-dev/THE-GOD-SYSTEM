@@ -138,6 +138,11 @@
   padding-bottom: 80px;
 }
 
+/* ซ่อน main content เมื่ออยู่แท็บ AI บนมือถือ */
+.app-content.ai-active {
+  display: none;
+}
+
 /* Tab Panels */
 .tab-panel {
   display: none;
@@ -284,6 +289,11 @@
     padding: var(--space-md);
     min-height: 0; /* Fix Grid Blowout */
     overflow-y: auto;
+  }
+
+  /* บน Desktop ให้ app-content แสดงเสมอ แม้อยู่ในสถานะ ai-active */
+  .app-content.ai-active {
+    display: flex;
   }
 
   .tab-panel {

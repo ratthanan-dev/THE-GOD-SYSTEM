@@ -301,7 +301,7 @@ function gameReducer(state, action) {
         
         // Normal carry over rules
         if (q.completed) return null;
-        if (!q.deadline) return null;
+        if (!q.deadline) return q; // Keep user quests without a deadline indefinitely
         if (new Date(q.deadline) < new Date()) return null; // expired
         return q;
       }).filter(Boolean);
@@ -600,6 +600,33 @@ export function GameProvider({ children, userId }) {
   useEffect(() => {
     if (!userId) return;
 
+    const performDailyResetCheck = (currentData) => {
+      const resetHour = currentData.settings?.dayResetHour ?? 4;
+      const today = getGameDay(resetHour);
+      if (currentData.lastLoginDate && currentData.lastLoginDate !== today) {
+        const incompleteCount = (currentData.quests || []).filter(q => {
+          if (q.completed) return false;
+          // Penalize if it's a daily quest or if it has an expired deadline
+          if (q.type === 'daily' || q.recurrence === 'daily') return true;
+          if (!q.deadline) return false; // Quests without deadline don't expire
+          return new Date(q.deadline) < new Date();
+        }).length;
+        if (incompleteCount > 0) {
+          setTimeout(() => {
+            dispatch({
+              type: 'APPLY_PENALTY',
+              expPenalty: incompleteCount * 30,
+              hpPenalty: incompleteCount * 5,
+              reason: `ไม่ทำเควสต์ครบ ${incompleteCount} ข้อเมื่อวาน`,
+            });
+          }, 1500);
+        }
+        setTimeout(() => {
+          dispatch({ type: 'DAILY_RESET' });
+        }, incompleteCount > 0 ? 4000 : 500);
+      }
+    };
+
     const loadFromCloud = async () => {
       try {
         const docRef = doc(db, 'users', userId);
@@ -608,30 +635,7 @@ export function GameProvider({ children, userId }) {
         if (docSnap.exists()) {
           const data = docSnap.data();
           dispatch({ type: 'LOAD_STATE', payload: data });
-
-          // Check for daily reset
-          const resetHour = data.settings?.dayResetHour ?? 4;
-          const today = getGameDay(resetHour);
-          if (data.lastLoginDate !== today) {
-            const incompleteCount = (data.quests || []).filter(q => {
-              if (q.completed) return false;
-              if (!q.deadline) return true;
-              return new Date(q.deadline) < new Date();
-            }).length;
-            if (incompleteCount > 0 && data.lastLoginDate) {
-              setTimeout(() => {
-                dispatch({
-                  type: 'APPLY_PENALTY',
-                  expPenalty: incompleteCount * 30,
-                  hpPenalty: incompleteCount * 5,
-                  reason: `ไม่ทำเควสต์ครบ ${incompleteCount} ข้อเมื่อวาน`,
-                });
-              }, 1500);
-            }
-            setTimeout(() => {
-              dispatch({ type: 'DAILY_RESET' });
-            }, incompleteCount > 0 ? 4000 : 500);
-          }
+          performDailyResetCheck(data);
         } else {
           // New user — no cloud data yet
           dispatch({ type: 'DAILY_RESET' });
@@ -641,8 +645,13 @@ export function GameProvider({ children, userId }) {
         // Fallback to localStorage
         try {
           const saved = localStorage.getItem(STORAGE_KEY);
-          if (saved) dispatch({ type: 'LOAD_STATE', payload: JSON.parse(saved) });
-          else dispatch({ type: 'DAILY_RESET' });
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            dispatch({ type: 'LOAD_STATE', payload: parsed });
+            performDailyResetCheck(parsed);
+          } else {
+            dispatch({ type: 'DAILY_RESET' });
+          }
         } catch {
           dispatch({ type: 'DAILY_RESET' });
         }
@@ -653,6 +662,41 @@ export function GameProvider({ children, userId }) {
 
     loadFromCloud();
   }, [userId]);
+
+  // ── Interval for checking day change while app is open ──
+  useEffect(() => {
+    if (!cloudLoaded || !state.initialized || !state.lastLoginDate) return;
+
+    const intervalId = setInterval(() => {
+      const resetHour = state.settings?.dayResetHour ?? 4;
+      const today = getGameDay(resetHour);
+      if (state.lastLoginDate !== today) {
+        // Trigger reset when the day crosses the threshold
+        const incompleteCount = (state.quests || []).filter(q => {
+          if (q.completed) return false;
+          if (q.type === 'daily' || q.recurrence === 'daily') return true;
+          if (!q.deadline) return false;
+          return new Date(q.deadline) < new Date();
+        }).length;
+        
+        if (incompleteCount > 0) {
+          dispatch({
+            type: 'APPLY_PENALTY',
+            expPenalty: incompleteCount * 30,
+            hpPenalty: incompleteCount * 5,
+            reason: `ไม่ทำเควสต์ครบ ${incompleteCount} ข้อเมื่อวาน`,
+          });
+          setTimeout(() => {
+            dispatch({ type: 'DAILY_RESET' });
+          }, 2500);
+        } else {
+          dispatch({ type: 'DAILY_RESET' });
+        }
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(intervalId);
+  }, [cloudLoaded, state.initialized, state.lastLoginDate, state.settings?.dayResetHour, state.quests]);
 
   // ── Auto-save to Firestore + localStorage (debounced 1.5s) ──
   useEffect(() => {

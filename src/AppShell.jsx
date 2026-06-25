@@ -66,7 +66,7 @@ export default function AppShell() {
       </header>
 
       {/* Main Content */}
-      <main className="app-content" ref={contentRef}>
+      <main className={`app-content${activeTab === 'ai' ? ' ai-active' : ''}`} ref={contentRef}>
         {/* Tab Panels */}
         <div className={`tab-panel ${activeTab === 'status' ? 'active' : ''}`}>
           <StatusWindow />
