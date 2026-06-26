@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
-import { callAI, QUICK_PROMPTS, parseQuestsFromResponse, stripQuestBlocks } from '../services/aiService';
+import { callAI, QUICK_PROMPTS, generateMorningBriefing, parseQuestsFromResponse, stripQuestBlocks } from '../services/aiService';
 import { buildMemoryContext, extractMemories } from '../services/memoryService';
 import ChatHistorySidebar from './ChatHistorySidebar';
 import './AIChat.css';
@@ -233,6 +233,8 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
     }
   }, [totalKeys, activeChatSessionId]);
 
+  // \u2190 NEW: Morning Briefing \u2014 \u0e40\u0e14\u0e49\u0e07\u0e2a\u0e23\u0e38\u0e1b\u0e15\u0e2d\u0e19\u0e40\u0e0a\u0e49\u0e32\u0e15\u0e32\u0e21\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e15\u0e31\u0e49\u0e07\u0e44\u0e27\u0e49\n  useEffect(() => {\n    if (totalKeys === 0) return;\n    if (!state.initialized) return;\n\n    const briefingHour = state.settings?.morningBriefingHour ?? 8;\n    const now = new Date();\n    const todayKey = now.toDateString();\n\n    // \u0e04\u0e27\u0e23\u0e2a\u0e48\u0e07\u0e16\u0e49\u0e32:\n    // 1. \u0e16\u0e36\u0e07\u0e40\u0e27\u0e25\u0e32\u0e17\u0e35\u0e48\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e25\u0e22\u0e1c\u0e48\u0e32\u0e19\u0e44\u0e1b\u0e41\u0e25\u0e49\u0e27\n    // 2. \u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e40\u0e04\u0e22\u0e2a\u0e48\u0e07\u0e27\u0e31\u0e19\u0e19\u0e35\u0e49\n    if (now.getHours() >= briefingHour && state.lastBriefingDate !== todayKey) {\n      const generate = async () => {\n        try {\n          const briefingText = await generateMorningBriefing({\n            aiConfig: config,\n            hunterData: { hunter, quests, computed },\n            activityLog: state.activityLog || [],\n            goals: state.settings?.goals || [],\n          });\n          if (briefingText) {\n            dispatch({\n              type: 'ADD_AI_MESSAGE',\n              message: {\n                id: Date.now(),\n                role: 'model',\n                content: `\ud83c\udf05 [ MORNING BRIEFING ]\n\n${briefingText}`,\n                timestamp: Date.now(),\n                isBriefing: true,\n              },\n            });\n            dispatch({ type: 'MORNING_BRIEFING_SENT', date: todayKey });\n          }\n        } catch (err) {\n          console.error('Morning briefing failed:', err);\n        }\n      };\n      generate();\n    }\n  }, [state.initialized, totalKeys, state.lastBriefingDate, state.settings?.morningBriefingHour]);
+
   const sendMessage = async (text) => {
     if (!text.trim() || isLoading) return;
     setError('');
@@ -259,7 +261,11 @@ Level ${hunter.level} | Rank ${hunter.rank} | ${hunter.jobTitle}
       const result = await callAI({
         aiConfig: config,
         messages: apiMessages,
-        hunterData: { hunter, quests, computed },
+        hunterData: {
+          hunter, quests, computed,
+          activityLog: state.activityLog || [],  // ← NEW
+          goals: state.settings?.goals || [],     // ← NEW
+        },
         dispatch,
         memoryContext,
       });

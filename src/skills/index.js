@@ -7,6 +7,7 @@ import { createQuestSkill } from './createQuestSkill';
 import { analyzeStatsSkill } from './analyzeStatsSkill';
 import { applyPenaltySkill } from './applyPenaltySkill';
 import { restoreHpSkill } from './restoreHpSkill';
+import { evaluateProgressSkill } from './evaluateProgressSkill';
 
 /** รายการสกิลทั้งหมดที่ THE SYSTEM มีอยู่ */
 export const ALL_SKILLS = [
@@ -14,7 +15,9 @@ export const ALL_SKILLS = [
   analyzeStatsSkill,
   applyPenaltySkill,
   restoreHpSkill,
+  evaluateProgressSkill,
 ];
+
 
 /**
  * แปลงสกิลทั้งหมดให้อยู่ในรูปแบบที่ Gemini API เข้าใจ

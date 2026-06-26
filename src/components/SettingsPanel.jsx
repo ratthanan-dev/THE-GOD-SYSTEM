@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useGame, getGameDay } from '../context/GameContext';
 import { getAllMemories, deleteMemory, clearAllMemories, getMemoryStats } from '../services/memoryService';
+import GoalManager from './GoalManager';
 import './SettingsPanel.css';
 
 // ─────────────────────────────────────────────
@@ -252,7 +253,39 @@ export default function SettingsPanel() {
             </span>
           </div>
         </div>
+
+        {/* Morning Briefing Hour */}
+        <div className="form-group" style={{ marginTop: '1rem' }}>
+          <label className="form-label text-mono">
+            🌅 Morning Briefing เวลา
+            <span className="form-label-hint"> · AI จะสรุปผลงานเมื่อวานตามเวลานี้ (แยกจากการรีเซ็ต)</span>
+          </label>
+          <div className="reset-hour-pills">
+            {[
+              { h: 6, label: '06:00', note: 'ตี 6' },
+              { h: 7, label: '07:00', note: 'ตี 7' },
+              { h: 8, label: '08:00', note: '8 โมง (แนะนำ)' },
+              { h: 9, label: '09:00', note: '9 โมง' },
+              { h: 10, label: '10:00', note: '10 โมง' },
+            ].map(({ h, label, note }) => {
+              const active = (state.settings?.morningBriefingHour ?? 8) === h;
+              return (
+                <button
+                  key={h}
+                  className={`reset-hour-pill text-mono ${active ? 'active' : ''}`}
+                  onClick={() => dispatch({ type: 'UPDATE_SETTINGS', patch: { morningBriefingHour: h } })}
+                  id={`briefing-hour-${h}`}
+                  style={active ? { borderColor: '#ffd700', color: '#ffd700' } : {}}
+                >
+                  <span className="reset-hour-time">{label}</span>
+                  <span className="reset-hour-note">{note}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
+
 
       {/* AI Configuration */}
       <div className="settings-section glass-panel" style={{ borderColor: totalKeys > 0 ? 'rgba(0,255,136,0.3)' : undefined }}>
@@ -470,6 +503,11 @@ export default function SettingsPanel() {
             </>
           );
         })()}
+      </div>
+
+      {/* Goal Manager */}
+      <div className="settings-section glass-panel" style={{ borderColor: 'rgba(167,139,250,0.3)' }}>
+        <GoalManager />
       </div>
 
       {/* Danger Zone */}

@@ -138,6 +138,7 @@ function createInitialState() {
       stats: { str: 10, agi: 10, int: 10, vit: 10, sense: 10 },
     },
     quests: [],
+    activityLog: [],        // ← NEW: บันทึกพฤติกรรม + semantic tags
     lastLoginDate: null,
     notifications: [],
     showLevelUp: false,
@@ -147,9 +148,11 @@ function createInitialState() {
     activeTab: 'status',
     settings: {
       hunterName: '',
-      goals: [],
+      goals: [],            // ← NEW: เป้าหมายแบบ Hierarchy
       dayResetHour: 4,
+      morningBriefingHour: 8, // ← NEW: เวลา Morning Briefing (แยกจาก reset)
     },
+    lastBriefingDate: null, // ← NEW: วันที่ส่ง Briefing ล่าสุด
     aiMessages: [],
     chatSessions: [defaultSession],
     activeChatSessionId: defaultSession.id,
@@ -158,8 +161,36 @@ function createInitialState() {
 }
 
 // ============================================
-// QUEST GENERATOR
+// SEMANTIC TAG HELPER
 // ============================================
+
+const CATEGORY_TAGS = {
+  fitness: ['health', 'physical_training'],
+  study:   ['knowledge', 'skill_growth'],
+  mindset: ['mental_health', 'self_awareness'],
+  daily:   ['routine', 'self_care'],
+  creative:['creativity', 'expression'],
+};
+
+function buildActivityTags(quest, activityLog = []) {
+  const tags = [...(CATEGORY_TAGS[quest.category] || [])];
+
+  // เพิ่ม 'discipline' ถ้ามี deadline และส่งก่อนหมดเวลา
+  if (quest.deadline && new Date(quest.deadline) > new Date()) {
+    tags.push('discipline');
+  }
+
+  // เพิ่ม 'consistency' ถ้าทำ quest หมวดเดียวกัน 3 วันติดกัน
+  const today = new Date().toDateString();
+  const recentSameCategory = activityLog
+    .filter(l => l.category === quest.category && l.event === 'quest_completed')
+    .map(l => new Date(l.timestamp).toDateString());
+  const uniqueDays = new Set(recentSameCategory);
+  if (uniqueDays.size >= 2) tags.push('consistency');
+
+  return [...new Set(tags)]; // remove duplicates
+}
+
 
 function generateDailyQuests(goals = []) {
   const selected = [];
@@ -223,6 +254,8 @@ function gameReducer(state, action) {
         chatSessions: state.chatSessions,    // preserve chat sessions
         activeChatSessionId: state.activeChatSessionId, // preserve active session
         aiConfig: state.aiConfig,            // always keep local AI config
+        activityLog: payload.activityLog || state.activityLog || [], // ← NEW: preserve activity log
+        lastBriefingDate: payload.lastBriefingDate || state.lastBriefingDate || null, // ← NEW
         activeTab: 'status', // เริ่มต้นที่หน้า Status เสมอเมื่อเปิดแอปใหม่
         settings: {
           ...state.settings,
@@ -267,9 +300,24 @@ function gameReducer(state, action) {
         exp: expGained,
       };
 
+      // ← NEW: บันทึก activity log พร้อม semantic tags
+      const logEntry = {
+        id: `log_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        timestamp: Date.now(),
+        date: new Date().toDateString(),
+        event: 'quest_completed',
+        quest: quest.title,
+        exp: expGained,
+        stat: quest.stat || null,
+        category: quest.category || 'daily',
+        tags: buildActivityTags(quest, state.activityLog || []),
+      };
+      const newActivityLog = [...(state.activityLog || []), logEntry].slice(-100);
+
       return {
         ...state,
         quests: newQuests,
+        activityLog: newActivityLog,
         hunter: {
           ...state.hunter,
           totalExp: newTotalExp,
@@ -313,12 +361,72 @@ function gameReducer(state, action) {
         message: '🚨 [เควสต์รายวันใหม่มาถึงแล้ว] — เตรียมพร้อมสำหรับภารกิจ!',
       };
       const resetHour = state.settings?.dayResetHour ?? 4;
+
+      // ← NEW: บันทึก day_ended log สรุปผลวันที่ผ่านมา
+      const completedToday = state.quests.filter(q => q.completed);
+      const missedToday = state.quests.filter(q => {
+        if (q.completed) return false;
+        if (q.type === 'daily' || q.recurrence === 'daily') return true;
+        if (!q.deadline) return false;
+        return new Date(q.deadline) < new Date();
+      });
+      const dayEndLog = {
+        id: `log_dayend_${Date.now()}`,
+        timestamp: Date.now(),
+        date: new Date().toDateString(),
+        event: 'day_ended',
+        completedCount: completedToday.length,
+        missedCount: missedToday.length,
+        completedTitles: completedToday.map(q => q.title),
+        tags: [], // summary entry ไม่มี tags เฉพาะ
+      };
+      const newActivityLog = [...(state.activityLog || []), dayEndLog].slice(-100);
+
       return {
         ...state,
         quests: newQuests,
+        activityLog: newActivityLog,
         lastLoginDate: getGameDay(resetHour),
         notifications: [...state.notifications, notification],
       };
+    }
+
+    case 'SET_AI_QUESTS': {
+      // ← NEW: ตั้งเควสต์ที่ AI สร้างให้ (ใช้แทน generateDailyQuests)
+      const carryOverQuests = state.quests.map(q => {
+        if (q.source !== 'user') return null;
+        if (q.recurrence === 'daily') {
+          return { ...q, completed: false, deadline: null, subtasks: q.subtasks ? q.subtasks.map(st => ({ ...st, completed: false })) : [] };
+        }
+        if (q.completed) return null;
+        if (!q.deadline) return q;
+        if (new Date(q.deadline) < new Date()) return null;
+        return q;
+      }).filter(Boolean);
+      const resetHour = state.settings?.dayResetHour ?? 4;
+      return {
+        ...state,
+        quests: [...action.quests, ...carryOverQuests],
+        lastLoginDate: getGameDay(resetHour),
+      };
+    }
+
+    case 'MORNING_BRIEFING_SENT': {
+      // ← NEW: บันทึกว่าส่ง briefing ไปแล้วในวันนี้
+      return { ...state, lastBriefingDate: action.date };
+    }
+
+    case 'LOG_ACTIVITY': {
+      // ← NEW: บันทึก activity log ทั่วไป (เช่น level up)
+      const entry = {
+        id: `log_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        timestamp: Date.now(),
+        date: new Date().toDateString(),
+        tags: [],
+        ...action.entry,
+      };
+      const newLog = [...(state.activityLog || []), entry].slice(-100);
+      return { ...state, activityLog: newLog };
     }
 
     case 'APPLY_PENALTY': {
@@ -387,6 +495,65 @@ function gameReducer(state, action) {
         ...state,
         settings: { ...state.settings, ...action.patch },
       };
+    }
+
+    // ← NEW: Goal Hierarchy Reducers
+    case 'ADD_GOAL': {
+      const newGoal = {
+        id: `goal_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+        title: action.title,
+        description: action.description || '',
+        status: 'active',
+        subGoals: [],
+        createdAt: Date.now(),
+      };
+      const goals = [...(state.settings.goals || []), newGoal];
+      return { ...state, settings: { ...state.settings, goals } };
+    }
+
+    case 'ADD_SUBGOAL': {
+      const goals = (state.settings.goals || []).map(g =>
+        g.id === action.goalId
+          ? { ...g, subGoals: [...(g.subGoals || []), {
+              id: `sub_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+              title: action.title,
+              status: 'pending',
+            }]}
+          : g
+      );
+      return { ...state, settings: { ...state.settings, goals } };
+    }
+
+    case 'UPDATE_SUBGOAL_STATUS': {
+      const goals = (state.settings.goals || []).map(g =>
+        g.id === action.goalId
+          ? { ...g, subGoals: (g.subGoals || []).map(sg =>
+              sg.id === action.subGoalId ? { ...sg, status: action.status } : sg
+            )}
+          : g
+      );
+      return { ...state, settings: { ...state.settings, goals } };
+    }
+
+    case 'UPDATE_GOAL_STATUS': {
+      const goals = (state.settings.goals || []).map(g =>
+        g.id === action.goalId ? { ...g, status: action.status } : g
+      );
+      return { ...state, settings: { ...state.settings, goals } };
+    }
+
+    case 'DELETE_GOAL': {
+      const goals = (state.settings.goals || []).filter(g => g.id !== action.goalId);
+      return { ...state, settings: { ...state.settings, goals } };
+    }
+
+    case 'DELETE_SUBGOAL': {
+      const goals = (state.settings.goals || []).map(g =>
+        g.id === action.goalId
+          ? { ...g, subGoals: (g.subGoals || []).filter(sg => sg.id !== action.subGoalId) }
+          : g
+      );
+      return { ...state, settings: { ...state.settings, goals } };
     }
 
     case 'SET_INITIALIZED':
@@ -706,7 +873,9 @@ export function GameProvider({ children, userId }) {
     const toSave = {
       hunter: state.hunter,
       quests: state.quests,
+      activityLog: state.activityLog || [],  // ← NEW: sync activity log
       lastLoginDate: state.lastLoginDate,
+      lastBriefingDate: state.lastBriefingDate || null, // ← NEW
       settings: state.settings,
       initialized: state.initialized,
     };
@@ -737,7 +906,7 @@ export function GameProvider({ children, userId }) {
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [state.hunter, state.quests, state.lastLoginDate, state.settings, state.initialized, state.aiMessages, state.chatSessions, state.activeChatSessionId, cloudLoaded, userId]);
+  }, [state.hunter, state.quests, state.activityLog, state.lastLoginDate, state.lastBriefingDate, state.settings, state.initialized, state.aiMessages, state.chatSessions, state.activeChatSessionId, cloudLoaded, userId]);
 
   // ── Export save data ──
   const exportData = useCallback(() => {
